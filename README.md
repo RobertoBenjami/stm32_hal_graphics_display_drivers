@@ -30,7 +30,7 @@ Lcd Reset (not required):
 - GPIO Pull-up/Pull-down: No pull-up and no pull-down
 - Maximum output speed: Low
 - User Label: LCD_RST
-Lcd CS:
+### Lcd CS:
 - GPIO output level: High
 - GPIO mode: Output Push Pull
 - GPIO Pull-up/Pull-down: No pull-up and no pull-down
