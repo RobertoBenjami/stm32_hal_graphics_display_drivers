@@ -101,7 +101,7 @@ DMA Settings (not required):
 - #define LCD_DMA_UNABLE(addr): here we can prevent DMA-unable memory address from being used by DMA
 
 ### ili9341.h, ili9488.h, st7735.h ...
-- #define  ..._SPIMODE 0 or 1 (not available for all types)[^1]
-0: for Half-Duplex mode
+- #define  ..._SPIMODE 0 or 1 (not available for all types)
+[^1] 0: for Half-Duplex mode
 1: for Full-Duplex mode
 - #define  ..._ORIENTATION  0...3 (here you can rotate the screen in the right direction)
