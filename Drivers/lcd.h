@@ -50,7 +50,22 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
-   
+
+/* Mode bits */
+#define  LCD_IO_CMD8       0x0001
+#define  LCD_IO_CMD16      0x0002
+
+#define  LCD_IO_WRITE      0x0004
+#define  LCD_IO_READ       0x0008
+
+#define  LCD_IO_DATA8      0x0010
+#define  LCD_IO_DATA16     0x0020
+#define  LCD_IO_DATA24TO16 0x0040  /* at read */
+#define  LCD_IO_DATA16TO24 0x0040  /* at write */
+
+#define  LCD_IO_MULTIDATA  0x0080
+#define  LCD_IO_FILL       0x0100
+
 typedef struct
 {
   void     (*Init)(void);

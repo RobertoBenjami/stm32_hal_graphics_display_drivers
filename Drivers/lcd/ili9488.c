@@ -211,21 +211,6 @@ void     LCD_IO_Init(void);
 void     LCD_IO_Bl_OnOff(uint8_t Bl);
 void     LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32_t DummySize, uint32_t Mode);
 
-/* Mode bits */
-#define  LCD_IO_CMD8       0x0001
-#define  LCD_IO_CMD16      0x0002
-
-#define  LCD_IO_WRITE      0x0004
-#define  LCD_IO_READ       0x0008
-
-#define  LCD_IO_DATA8      0x0010
-#define  LCD_IO_DATA16     0x0020
-#define  LCD_IO_DATA24TO16 0x0040  /* at read */
-#define  LCD_IO_DATA16TO24 0x0040  /* at write */
-
-#define  LCD_IO_MULTIDATA  0x0080
-#define  LCD_IO_FILL       0x0100
-
 #define  LCD_IO_WriteCmd8DataFill16(Cmd, Data, Size) \
   LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)&Data, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16 | LCD_IO_FILL)
 #define  LCD_IO_WriteCmd8DataFill16to24(Cmd, Data, Size) \
