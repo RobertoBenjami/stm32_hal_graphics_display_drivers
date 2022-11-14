@@ -1,8 +1,12 @@
 # STM32 graphics display drivers with HAL
 
-It would have been very complicated to write the IO_SPI driver in baremetal style for the stm h7 family, 
-so I asked for the help of the factory HAL driver (the baremetal driver has become too complicated). 
-The simpler code results in a slower run, but so many sacrifices had to be made. 
+I converted and fixed the old baremetal style graphic lcd driver. I needed a spi driver for stm32h7, 
+and I decided to ask for HAL driver help. This made the driver much shorter and clearer. 
+There are very few differences between the individual families, so the code of all the families fit into 
+one source. Currently, DMA can only be used for writing operations, 
+I don't think this will change, because it is very rarely necessary to read a large amount of data 
+from the display. Only 8 and 16-bit writing DMA is supported for the write operation, converting 
+from 16-bit to 24-bit while running would be very difficult to solve with DMA.
 I also standardized the LCD driver level, a command can be solved with a single IO function call. 
 I also supplemented the BSP driver, making it possible to create individual LCD commands from 
 the user's code (BSP_LCD_DataWrite, BSP_LCD_DataRead). I removed some of the settings from the 
