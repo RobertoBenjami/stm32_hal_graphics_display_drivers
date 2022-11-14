@@ -9,8 +9,8 @@ the user's code (BSP_LCD_DataWrite, BSP_LCD_DataRead). I removed some of the set
 configuration include file, so it must be set in the Cube.
 
 ## Setting in CubeIde or CubeMX:
-SPI
-Parameter Settings:
+###SPI
+####Parameter Settings:
 - Mode: Full-Duplex Master or Half-Duplex Master or Transmit Only Master
 - Hardware NSS Signal: Disable
 - Frame Format: Motorola
@@ -102,6 +102,6 @@ DMA Settings (not required):
 
 ### ili9341.h, ili9488.h, st7735.h ...
 - #define  ..._SPIMODE 0 or 1 (not available for all types)
-#### 0: for Half-Duplex mode
-#### 1: for Full-Duplex mode
+	0: for Half-Duplex mode
+	1: for Full-Duplex mode
 - #define  ..._ORIENTATION  0...3 (here you can rotate the screen in the right direction)
