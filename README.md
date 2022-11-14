@@ -19,9 +19,7 @@ SPI
   - Prescaler (for Baud Rate): first a higher value, later it can be reduced until it works well
   - Clock Polarity: High
   - Clock Phase: 2 Edge
-  - Master Keep Io State: Half-Duplex->Enabled, Full-Duplex->Disabled
-  - IO Swap: Disabled
-    (What is not listed is left at the default value)
+  (What is not listed is left at the default value)
   DMA Settings (not required):
   - Add DMA Request SPIn_TX, left at the default value
   
