@@ -106,4 +106,4 @@ Settings in code:
   - #define  ..._SPIMODE 0 or 1 (not available for all types)
     0: for Half-Duplex mode
     1: for Full-Duplex mode
-    #define  ..._ORIENTATION  0...3 (here you can rotate the screen in the right direction)
+  - #define  ..._ORIENTATION  0...3 (here you can rotate the screen in the right direction)
