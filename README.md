@@ -24,7 +24,7 @@ DMA Settings (not required):
 - Add DMA Request SPIn_TX, left at the default value
   
 ## GPIO:
-Lcd Reset (not required):
+### Lcd Reset (not required):
 - GPIO output level: low
 - GPIO mode: Output Push Pull
 - GPIO Pull-up/Pull-down: No pull-up and no pull-down
@@ -36,15 +36,15 @@ Lcd Reset (not required):
 - GPIO Pull-up/Pull-down: No pull-up and no pull-down
 - Maximum output speed: Very High
 - User Label: LCD_CS
-Lcd RS:
+### Lcd RS:
 - GPIO output level: High
 - GPIO mode: Output Push Pull
 - GPIO Pull-up/Pull-down: No pull-up and no pull-down
 - Maximum output speed: Very High
 - User Label: LCD_RS
-Lcd SCK:
+### Lcd SCK:
 - User Label: LCD_SCK
-Lcd backlight (not required):
+### Lcd backlight (not required):
 - GPIO output level: low
 - GPIO mode: Output Push Pull
 - GPIO Pull-up/Pull-down: No pull-up and no pull-down
@@ -52,7 +52,7 @@ Lcd backlight (not required):
 - User Label: LCD_BL
 
 ## Settings in code:
-lcd_io_spi_hal.h:
+### lcd_io_spi_hal.h:
 - #define LCD_SPI_HANDLE   hspi1 or hspi2 or... (depending on which spi we chose)
 - #define LCD_SPI_MODE     0 or 1 or 2 (depending on the selected spi mode)
   0: if SPI mode is Transmit Only Master
@@ -79,17 +79,17 @@ lcd_io_spi_hal.h:
   Using dma, the draw function can return immediately after starting the fill and bitmap draw operation.
   If you want to draw again at this point, you have to wait for the previous operation to finish. 
   We can choose when to wait from among 3 strategies.
-- 0: After each drawing function, the function returns as soon as possible. 
+  0: After each drawing function, the function returns as soon as possible. 
   At the start of the draw function, it checks if there is an unfinished draw operation in progress. 
   If there is, it waits for it to complete. 
   Choosing this strategy, we must be careful not to write to the bitmap memory area after the drawing 
   function returns, because it is still in use by the DMA. 
   If we enter it, an incorrect drawing may be created.
-- 1: At the beginning of drawing, it checks whether there is an unfinished drawing operation in progress. 
+  1: At the beginning of drawing, it checks whether there is an unfinished drawing operation in progress. 
   If there is, it waits for it to complete. In the case of drawing a bitmap, the function returns 
   only after the entire content has been drawn, so it is not possible to spoil the content of the 
   bitmap afterwards.
-- 2: When drawing fill and bitmap, it waits until the drawing operation is completed at the end, 
+  2: When drawing fill and bitmap, it waits until the drawing operation is completed at the end, 
   so you no longer need to check if there is an unfinished drawing operation at the beginning 
   of the drawing function.
   Which one should we choose? Without Freertos, by selecting method 0, 
@@ -100,8 +100,8 @@ lcd_io_spi_hal.h:
   in which case the other tasks are allowed to run.	
 - #define LCD_DMA_UNABLE(addr): here we can prevent DMA-unable memory address from being used by DMA
 
-ili9341.h, ili9488.h, st7735.h ...
+### ili9341.h, ili9488.h, st7735.h ...
 - #define  ..._SPIMODE 0 or 1 (not available for all types)
-  0: for Half-Duplex mode
-  1: for Full-Duplex mode
+#### 0: for Half-Duplex mode
+#### 1: for Full-Duplex mode
 - #define  ..._ORIENTATION  0...3 (here you can rotate the screen in the right direction)
