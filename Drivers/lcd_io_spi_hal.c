@@ -237,12 +237,14 @@ struct
 #if osCMSIS < 0x20000
 /* DMA mode on, Freertos 1 */
 
+osThreadId LcdTaskId;
 #define LcdSignalWait         osSignalWait(LCDDMASIGNAL, osWaitForever)
 #define LcdSignalSet          osSignalSet(LcdTaskId, LCDDMASIGNAL)
 //-----------------------------------------------------------------------------
 #else
 /* DMA mode on, Freertos 2 */
 
+osThreadId_t LcdTaskId;
 #define LcdSignalWait         osThreadFlagsWait(LCDDMASIGNAL, osFlagsWaitAny, osWaitForever)
 #define LcdSignalSet          osThreadFlagsSet(LcdTaskId, LCDDMASIGNAL)
 
@@ -250,8 +252,6 @@ struct
 
 //-----------------------------------------------------------------------------
 /* DMA mode on, Freertos 1 and 2 */
-
-osThreadId_t LcdTaskId;
 
 #if LCD_DMA_ENDWAIT == 0
 #define LcdSpiTransInit()     {LcdTaskId = osThreadGetId(); LcdSignalSet;}
