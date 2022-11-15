@@ -72,8 +72,8 @@ configuration include file, so it must be set in the Cube.
 - void LCD_IO_DmaTxCpltCallback(SPI_HandleTypeDef *hspi): (if we create a function with this name in our program, 
   the driver will call it when the DMA operation ends)
 - #define LCD_DMA_WAITMODE  0 or 1 (how to wait for the end of the DMA operation (while of freertos signal))
-  0: using a while loop, we wait until the previous DMA operation is completed
-  1: using freertos, we let another task run until the DMA operation is finished
+  - 0: using a while loop, we wait until the previous DMA operation is completed
+  - 1: using freertos, we let another task run until the DMA operation is finished
 - #define LCD_DMA_ENDWAIT   0 or 1 or 2 (when should we wait for the previous DMA operation to complete?)
   - 0: also at the beginning for filling and bitmap drawing
   - 1: at the beginning of LCD operation, but at the end of bitmap drawing
