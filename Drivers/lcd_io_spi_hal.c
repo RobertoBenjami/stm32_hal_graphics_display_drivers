@@ -435,8 +435,15 @@ void LCDWriteFillMultiData16to24(uint16_t * pData, uint32_t Size, uint32_t dinc)
     rgb24[0] = (*pData & 0xF800) >> 8;
     rgb24[1] = (*pData & 0x07E0) >> 3;
     rgb24[2] = (*pData & 0x001F) << 3;
-    while(Size--)
-      HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)rgb24, 3, 5);
+    #if LCD_DMA_TX == 1
+    if(rgb24[0] == rgb24[1] && rgb24[1] == rgb24[2]) /* if R=G=B -> option for DMA use */
+      LCDWriteFillMultiData8and16((uint16_t *)rgb24, Size * 3, 0, 0);
+    else
+    #endif
+    {
+      while(Size--)
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)rgb24, 3, 5);
+    }
   }
   else
     while(Size--)
