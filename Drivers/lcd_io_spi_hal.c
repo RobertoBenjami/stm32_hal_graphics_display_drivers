@@ -437,7 +437,10 @@ void LCDWriteFillMultiData16to24(uint16_t * pData, uint32_t Size, uint32_t dinc)
     rgb24[2] = (*pData & 0x001F) << 3;
     #if LCD_DMA_TX == 1
     if(rgb24[0] == rgb24[1] && rgb24[1] == rgb24[2]) /* if R=G=B -> option for DMA use */
+    {
       LCDWriteFillMultiData8and16((uint16_t *)rgb24, Size * 3, 0, 0);
+      return;
+    }
     else
     #endif
     {
