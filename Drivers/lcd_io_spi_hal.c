@@ -223,9 +223,8 @@ struct
 
 #define LcdSpiTransEnd()
 
-#define LcdSpiDmaTransStart(void)  dmastatus.txstatus = 1
-
-#define LcdSpiDmaTransEnd(void)    dmastatus.txstatus = 0
+#define LcdSpiDmaTransStart() {dmastatus.txstatus = 1;}
+#define LcdSpiDmaTransEnd()   {dmastatus.txstatus = 0;}
 
 
 #elif LCD_DMA_WAITMODE == 1
