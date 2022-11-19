@@ -1,5 +1,5 @@
 /*
- * SPI HAL LCD driver STM32H7
+ * SPI HAL LCD driver STM32
  * author: Roberto Benjami
  * v.2022.11
 */
