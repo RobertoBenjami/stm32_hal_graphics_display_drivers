@@ -490,7 +490,7 @@ void LCDReadMultiData(uint16_t * pData, uint32_t Size, uint32_t bitdepth)
       Size = 0;
     }
     HAL_SPI_Receive(&LCD_SPI_HANDLE, (uint8_t *)pData, Size16, 500);
-    *(uint32_t *)&pData += Size16 << bitdepth;
+    *(uint8_t *)&pData += Size16 << bitdepth;
   }
   LcdDirWrite();
   HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
