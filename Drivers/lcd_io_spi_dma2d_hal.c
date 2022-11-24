@@ -1,5 +1,5 @@
 /*
- * SPI HAL LCD driver for all stm32 family
+ * SPI HAL LCD driver with DMA2D (stm32f4xx, stm32f7xx, stm32h7xx)
  * author: Roberto Benjami
  * v.2022.11
 */
@@ -9,7 +9,7 @@
 
 #include "main.h"
 #include "lcd.h"
-#include "lcd_io_spi_hal.h"
+#include "lcd_io_spi_dma2d_hal.h"
 
 #if  LCD_DMA_WAITMODE == 1
 #include "cmsis_os.h"
@@ -23,102 +23,45 @@
 #define  RGB888TO565(c24)      ((c24 & 0XF80000) >> 19 | (c24 & 0xFC00) >> 5 | (c24 & 0xF8 ) << 8)
 #endif
 
-#if defined(STM32C0)
-#include "stm32c0xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32F0)
-#include "stm32f0xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32F1)
-#include "stm32f1xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        hlcdspi.Instance->CR1 &= ~SPI_CR1_DFF
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       hlcdspi.Instance->CR1 |= SPI_CR1_DFF
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32F2)
-#include "stm32f2xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        hlcdspi.Instance->CR1 &= ~SPI_CR1_DFF
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       hlcdspi.Instance->CR1 |= SPI_CR1_DFF
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32F3)
-#include "stm32f3xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32F4)
+#if defined(STM32F4)
 #include "stm32f4xx_ll_gpio.h"
 #define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        hlcdspi.Instance->CR1 &= ~SPI_CR1_DFF
 #define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       hlcdspi.Instance->CR1 |= SPI_CR1_DFF
 #define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
 #define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
+#if LCD_IO_RGB24_ORDER == 0
+#define  DMA2D_CHECK                              1
+#elif LCD_IO_RGB24_ORDER == 1
+#define  DMA2D_CHECK                              (!dinc)
+#endif
+#define  RedBlueOrder(hlcddma2d)
+
 #elif defined(STM32F7)
 #include "stm32f7xx_ll_gpio.h"
 #define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
 #define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
 #define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
 #define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
+#if LCD_IO_RGB24_ORDER == 0
+#define  DMA2D_CHECK                              1
+#elif LCD_IO_RGB24_ORDER == 1
+#define  DMA2D_CHECK                              (!dinc)
+#endif
+#define  RedBlueOrder(hlcddma2d)
+
 #elif defined(STM32H7)
 #include "stm32h7xx_ll_gpio.h"
 #define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CFG1, SPI_CFG1_DSIZE, SPI_DATASIZE_8BIT)
 #define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CFG1, SPI_CFG1_DSIZE, SPI_DATASIZE_16BIT)
 #define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CFG1, SPI_CFG1_MBR, br << SPI_CFG1_MBR_Pos)
 #define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXP) dummy = hlcdspi.Instance->RXDR
-#elif defined(STM32G0)
-#include "stm32g0xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32G4)
-#include "stm32g4xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32L0)
-#include "stm32l0xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        hlcdspi.Instance->CR1 &= ~SPI_CR1_DFF
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       hlcdspi.Instance->CR1 |= SPI_CR1_DFF
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32L1)
-#include "stm32l1xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        hlcdspi.Instance->CR1 &= ~SPI_CR1_DFF
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       hlcdspi.Instance->CR1 |= SPI_CR1_DFF
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32L4)
-#include "stm32l4xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32L5)
-#include "stm32l5xx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32WB)
-#include "stm32wbxx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
-#elif defined(STM32WL)
-#include "stm32wlxx_ll_gpio.h"
-#define  LCD_SPI_SETDATASIZE_8BIT(hlcdspi)        MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_8BIT)
-#define  LCD_SPI_SETDATASIZE_16BIT(hlcdspi)       MODIFY_REG(hlcdspi.Instance->CR2, SPI_CR2_DS, SPI_DATASIZE_16BIT)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
-#define  LCD_SPI_RXFIFOCLEAR(hlcdspi, dummy)      while(hlcdspi.Instance->SR & SPI_SR_RXNE) dummy = hlcdspi.Instance->DR
+#define  DMA2D_CHECK                              1
+#if LCD_IO_RGB24_ORDER == 0
+#define  RedBlueOrder(hlcddma2d)                  hlcddma2d.Init.RedBlueSwap = DMA2D_RB_REGULAR
+#elif LCD_IO_RGB24_ORDER == 1
+#define  RedBlueOrder(hlcddma2d)                  hlcddma2d.Init.RedBlueSwap = DMA2D_RB_SWAP
+#endif
+
 #else
 #error unknown processor family
 #endif
@@ -137,6 +80,29 @@ void  LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32_t 
 
 //=============================================================================
 extern  SPI_HandleTypeDef   LCD_SPI_HANDLE;
+extern  DMA2D_HandleTypeDef LCD_DMA2D_HANDLE;
+
+#define DMA_STATUS_FREE       0
+#define DMA_STATUS_FILL       (1 << 0)
+#define DMA_STATUS_MULTIDATA  (1 << 1)
+#define DMA_STATUS_8BIT       (1 << 2)
+#define DMA_STATUS_16BIT      (1 << 3)
+#define DMA_STATUS_24BIT      (1 << 4)
+
+//-----------------------------------------------------------------------------
+#ifndef LCD_DMA_UNABLE /* definied DMA unable memory area ? */
+#define LCD_DMA_UNABLE(addr)  0
+#endif
+
+struct
+{
+  uint32_t status;             /* DMA status (0=free, other: see the DMA_STATUS... macros)  */
+  uint32_t size;               /* all transactions data size */
+  uint32_t trsize;             /* actual DMA transaction data size */
+  uint32_t maxtrsize;          /* max size / one DMA transaction */
+  uint32_t ptr;                /* data pointer for DMA */
+  uint16_t data;               /* fill operation data for DMA */
+}volatile dmastatus;
 
 //-----------------------------------------------------------------------------
 #if LCD_SPI_MODE == 0
@@ -179,7 +145,6 @@ void LcdDirWrite(void)
   LCD_SPI_SETBAUDRATE(LCD_SPI_HANDLE, LCD_SPI_SPD_WRITE);       /* speed change */
   #endif
 }
-
 #endif /* LCD_SPI_MODE */
 
 //-----------------------------------------------------------------------------
@@ -196,45 +161,28 @@ static inline void LcdSpiMode16(void)
 }
 
 //-----------------------------------------------------------------------------
-#if LCD_DMA_TX == 0
-/* DMA off */
-
-#define LcdSpiTransInit()
-#define LcdSpiTransStart()
-#define LcdSpiTransEnd()
-
-#elif LCD_DMA_TX == 1
-/* DMA on */
-
-struct
-{
-  volatile uint32_t txsize;    /* DMA transaction data counter */
-  volatile uint32_t txptr;     /* data pointer for DMA */
-  volatile uint32_t txstatus;  /* 0 = DMA is free, 1=DMA is busy */
-  volatile uint16_t txdata;    /* fill operation data for DMA */
-}dmastatus;
+uint8_t lcd_dma2d_buffer[LCD_DMA2D_BUFFERSIZE * 3];
 
 //-----------------------------------------------------------------------------
 #if LCD_DMA_WAITMODE == 0
-/* DMA mode on, Freertos off */
+/* Freertos off */
 
-#define LcdSpiTransInit()
+#define LcdSpiTransInit()   {LCD_DMA2D_HANDLE.XferCpltCallback  = Dma2dCpltCallback; RedBlueOrder(LCD_DMA2D_HANDLE);}
 
 #if LCD_DMA_ENDWAIT == 0
-#define LcdSpiTransStart()  {while(dmastatus.txstatus);}
+#define LcdSpiTransStart()  {while(dmastatus.status != DMA_STATUS_FREE);}
 #define LcdSpiDmaWaitEnd()
 #elif LCD_DMA_ENDWAIT == 1
-#define LcdSpiTransStart()  {while(dmastatus.txstatus);}
-#define LcdSpiDmaWaitEnd()  {if(dinc) while(dmastatus.txstatus);}
+#define LcdSpiTransStart()  {while(dmastatus.status != DMA_STATUS_FREE);}
+#define LcdSpiDmaWaitEnd()  {if(dinc) while(dmastatus.status != DMA_STATUS_FREE);}
 #elif LCD_DMA_ENDWAIT == 2
 #define LcdSpiTransStart()
-#define LcdSpiDmaWaitEnd()  {while(dmastatus.txstatus);}
+#define LcdSpiDmaWaitEnd()  {while(dmastatus.status != DMA_STATUS_FREE);}
 #endif
 
 #define LcdSpiTransEnd()
 
-#define LcdSpiDmaTransStart() {dmastatus.txstatus = 1;}
-#define LcdSpiDmaTransEnd()   {dmastatus.txstatus = 0;}
+#define LcdSpiDmaTransEnd()       {dmastatus.status = DMA_STATUS_FREE;}
 
 
 #elif LCD_DMA_WAITMODE == 1
@@ -244,23 +192,23 @@ struct
 
 //-----------------------------------------------------------------------------
 #if osCMSIS < 0x20000
-/* DMA mode on, Freertos 1 */
+/* Freertos 1 */
 
 osThreadId LcdTaskId;
 #define LcdSignalWait         osSignalWait(LCDDMASIGNAL, osWaitForever)
 #define LcdSignalSet          osSignalSet(LcdTaskId, LCDDMASIGNAL)
 //-----------------------------------------------------------------------------
 #else
-/* DMA mode on, Freertos 2 */
+/* Freertos 2 */
 
 osThreadId_t LcdTaskId;
 #define LcdSignalWait         osThreadFlagsWait(LCDDMASIGNAL, osFlagsWaitAny, osWaitForever)
 #define LcdSignalSet          osThreadFlagsSet(LcdTaskId, LCDDMASIGNAL)
 
-#endif
+#endif  /* #else osCMSIS < 0x20000 */
 
 //-----------------------------------------------------------------------------
-/* DMA mode on, Freertos 1 and 2 */
+/* Freertos 1 and 2 */
 
 #if LCD_DMA_ENDWAIT == 0
 #define LcdSpiTransInit()     {LcdTaskId = osThreadGetId(); LcdSignalSet;}
@@ -279,8 +227,7 @@ osThreadId_t LcdTaskId;
 #define LcdSpiDmaWaitEnd()    {LcdSignalWait;}
 #endif
 
-#define LcdSpiDmaTransStart() {dmastatus.txstatus = 1;}
-#define LcdSpiDmaTransEnd()   {dmastatus.txstatus = 0; LcdSignalSet;}
+#define LcdSpiDmaTransEnd()   {dmastatus.status = DMA_STATUS_FREE; LcdSignalSet;}
 
 #endif
 
@@ -295,39 +242,38 @@ __weak void LCD_IO_DmaTxCpltCallback(SPI_HandleTypeDef *hspi)
 /* Get the DMA operation status (0=DMA is free, 1=DMA is busy) */
 uint32_t LCD_IO_DmaBusy(void)
 {
-  return dmastatus.txstatus;
+  uint32_t ret = 0;
+  if(dmastatus.status != DMA_STATUS_FREE)
+    ret = 1;
+  return ret;
 }
 
 //-----------------------------------------------------------------------------
-/* SPI DMA operation interrupt */
+/* SPI DMA operation completed interrupt */
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
   if(hspi == &LCD_SPI_HANDLE)
   {
-    uint32_t Size;
-    if(dmastatus.txsize)
+    if(dmastatus.size > dmastatus.trsize)
     { /* dma operation is still required */
-      if(dmastatus.txsize > DMA_MAXSIZE)
-      { /* the size is too large, it cannot be done with one dma operation */
-        Size = DMA_MAXSIZE;
-        dmastatus.txsize -= DMA_MAXSIZE;
-      }
+
+      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_8BIT))
+        dmastatus.ptr += dmastatus.trsize;        /* 8bit multidata */
+      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_16BIT))
+          dmastatus.ptr += dmastatus.trsize << 1; /* 16bit multidata */
+      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT))
+          dmastatus.ptr += dmastatus.trsize << 1; /* 24bit multidata */
+
+      dmastatus.size -= dmastatus.trsize;
+      if(dmastatus.size <= dmastatus.maxtrsize)
+        dmastatus.trsize = dmastatus.size;
+
+      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT))
+        HAL_DMA2D_Start_IT(&LCD_DMA2D_HANDLE, dmastatus.ptr, (uint32_t)lcd_dma2d_buffer, dmastatus.trsize, 1);
+      else if(dmastatus.status == (DMA_STATUS_FILL | DMA_STATUS_24BIT))
+        HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)dmastatus.ptr, dmastatus.trsize * 3);
       else
-      { /* can be done with one dma operation */
-        Size = dmastatus.txsize;
-        dmastatus.txsize = 0;
-      }
-
-      HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)dmastatus.txptr, Size);
-
-      if(hspi->hdmatx->Init.MemInc == DMA_MINC_ENABLE)
-      { /* multidata -> pointer increase */
-        if(hspi->hdmatx->Init.MemDataAlignment == DMA_MDATAALIGN_BYTE)
-          dmastatus.txptr += Size;      /* 8bit */
-        else
-          dmastatus.txptr += Size << 1; /* 16bit */
-      }
-
+        HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)dmastatus.ptr, dmastatus.trsize);
     }
     else
     { /* dma operations have ended */
@@ -337,7 +283,14 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
     }
   }
 }
-#endif /* #if LCD_DMA_TX == 1 */
+
+//-----------------------------------------------------------------------------
+/* DMA2D operation completed interrupt */
+void Dma2dCpltCallback(DMA2D_HandleTypeDef *hdma2d)
+{
+
+  HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)lcd_dma2d_buffer, dmastatus.trsize * 3);
+}
 
 //-----------------------------------------------------------------------------
 /* Wrtite fill and multi data to Lcd (8 and 16 bit mode)
@@ -347,60 +300,63 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
    - bitdepth: 0 = 8bit data, 1 = 16bit data */
 void LCDWriteFillMultiData8and16(uint16_t * pData, uint32_t Size, uint32_t dinc, uint32_t bitdepth)
 {
-  if(bitdepth == 1)
-    LcdSpiMode16();
-  else
+  if(bitdepth == 0)
     LcdSpiMode8();
-
-  #if LCD_DMA_TX == 1
+  else
+    LcdSpiMode16();
 
   if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)))
   { /* DMA mode */
-    LcdSpiDmaTransStart();
-
     if(bitdepth == 0)
     { /* 8bit DMA */
-      LCD_SPI_HANDLE.hdmatx->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
       LCD_SPI_HANDLE.hdmatx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+      LCD_SPI_HANDLE.hdmatx->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+      dmastatus.status = DMA_STATUS_8BIT;
     }
     else
     { /* 16bit DMA */
-      LCD_SPI_HANDLE.hdmatx->Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
       LCD_SPI_HANDLE.hdmatx->Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+      LCD_SPI_HANDLE.hdmatx->Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+      dmastatus.status = DMA_STATUS_16BIT;
     }
+
+    if(!dinc)
+    { /* fill */
+      LCD_SPI_HANDLE.hdmatx->Init.MemInc = DMA_MINC_DISABLE;
+      dmastatus.status |= DMA_STATUS_FILL;
+      dmastatus.data = *pData;
+      dmastatus.ptr = (uint32_t)&dmastatus.data;
+    }
+    else
+    { /* multidata */
+      LCD_SPI_HANDLE.hdmatx->Init.MemInc = DMA_MINC_ENABLE;
+      dmastatus.status |= DMA_STATUS_MULTIDATA;
+      dmastatus.ptr = (uint32_t)pData;
+    }
+
+    dmastatus.size = Size;
+    dmastatus.maxtrsize = DMA_MAXSIZE;
 
     if(Size > DMA_MAXSIZE)
-    { /* the transaction cannot be performed with one DMA operation */
-      dmastatus.txsize = Size - DMA_MAXSIZE;
-      Size = DMA_MAXSIZE;
-    }
+      dmastatus.trsize = DMA_MAXSIZE;
     else /* the transaction can be performed with one DMA operation */
-      dmastatus.txsize = 0;
-
-    if(dinc) /* multidata */
-    {
-      LCD_SPI_HANDLE.hdmatx->Init.MemInc = DMA_MINC_ENABLE;
-      dmastatus.txptr = (uint32_t)pData + (Size << bitdepth);
-    }
-    else     /* fill */
-    {
-      LCD_SPI_HANDLE.hdmatx->Init.MemInc = DMA_MINC_DISABLE;
-      dmastatus.txdata = *pData;
-      dmastatus.txptr = (uint32_t)&dmastatus.txdata;
-      pData = (uint16_t *)&dmastatus.txdata;
-    }
+      dmastatus.trsize = Size;
 
     HAL_DMA_Init(LCD_SPI_HANDLE.hdmatx);
-    HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)pData, Size);
+    HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)dmastatus.ptr, dmastatus.trsize);
     LcdSpiDmaWaitEnd();
   }
   else
-  #endif
   { /* not DMA mode */
-    if(dinc)
-    { /* data out */
+    if(dinc == 0)
+    { /* fill */
+      while(Size--) /* fill 8 and 16bit */
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)pData, 1, LCD_SPI_TIMEOUT);
+    }
+    else
+    { /* multidata */
       while(Size)
-      { /* multidata 8bit and 16bit */
+      {
         uint16_t Size16;
         if(Size > DMA_MAXSIZE)
         {
@@ -416,10 +372,8 @@ void LCDWriteFillMultiData8and16(uint16_t * pData, uint32_t Size, uint32_t dinc,
         pData += Size16;
       }
     }
-    else /* fill out */
-      while(Size--) /* fill 8 and 16bit */
-        HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)pData, 1, LCD_SPI_TIMEOUT);
 
+    /* transaction end */
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
     LcdSpiTransEnd();
   }
@@ -432,40 +386,67 @@ void LCDWriteFillMultiData8and16(uint16_t * pData, uint32_t Size, uint32_t dinc,
    - dinc: 0=fill mode, 1=multidata mode */
 void LCDWriteFillMultiData16to24(uint16_t * pData, uint32_t Size, uint32_t dinc)
 {
-  static union
-  {
-    uint32_t d24;
-    uint8_t  d8[4];
-  }rgb888;
-
+  static uint32_t rgb888;
   LcdSpiMode8();
 
-  if(dinc == 0)
-  { /* fill 16bit to 24bit */
-    rgb888.d24 = RGB565TO888(*pData);
-    #if LCD_DMA_TX == 1
-    if(rgb888.d8[0] == rgb888.d8[1] && rgb888.d8[1] == rgb888.d8[2]) /* if R=G=B -> option for DMA use */
-    {
-      LCDWriteFillMultiData8and16((uint16_t *)&rgb888, Size * 3, 0, 0);
-      return;
+  if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)) && DMA2D_CHECK)
+  {
+    uint32_t dma2d_ptr;
+
+    /* SPI TX DMA setting (8bit, multidata) */
+    LCD_SPI_HANDLE.hdmatx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    LCD_SPI_HANDLE.hdmatx->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    LCD_SPI_HANDLE.hdmatx->Init.MemInc = DMA_MINC_ENABLE;
+    HAL_DMA_Init(LCD_SPI_HANDLE.hdmatx);
+
+    if(dinc == 0)
+    { /* fill 16bit to 24bit */
+      dmastatus.status = DMA_STATUS_FILL | DMA_STATUS_24BIT;
+      dmastatus.ptr = (uint32_t)lcd_dma2d_buffer; /* 24bit color bitmap address */
+      dma2d_ptr = RGB565TO888(*pData);            /* 24bit color code */
+      LCD_DMA2D_HANDLE.Init.Mode = DMA2D_R2M;     /* register mode */
     }
     else
-    #endif
-    {
+    { /* multidata 16bit to 24bit */
+      dmastatus.status = DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT;
+      dmastatus.ptr = (uint32_t)pData;            /* 16bit color bitmap address */
+      dma2d_ptr = (uint32_t)pData;                /* 16bit color bitmap address */
+      LCD_DMA2D_HANDLE.Init.Mode = DMA2D_M2M_PFC; /* mem to mem with pixel format conversion mode */
+    }
+    dmastatus.maxtrsize = LCD_DMA2D_BUFFERSIZE;
+    dmastatus.size = Size;
+
+    if(Size > LCD_DMA2D_BUFFERSIZE)
+      dmastatus.trsize = LCD_DMA2D_BUFFERSIZE;
+    else
+      dmastatus.trsize = Size;
+
+    /* DMA2D setting */
+    HAL_DMA2D_Init(&LCD_DMA2D_HANDLE);
+    HAL_DMA2D_Start_IT(&LCD_DMA2D_HANDLE, dma2d_ptr, (uint32_t)lcd_dma2d_buffer, dmastatus.trsize, 1);
+    LcdSpiDmaWaitEnd();
+    return;
+  }
+  else
+  {
+    if(dinc == 0)
+    { /* fill 16bit to 24bit */
+      rgb888 = RGB565TO888(*pData);
       while(Size--)
         HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)&rgb888, 3, LCD_SPI_TIMEOUT);
     }
-  }
-  else
-    while(Size--)
+    else
     { /* multidata 16bit to 24bit */
-      rgb888.d24 = RGB565TO888(*pData);
-      HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)&rgb888, 3, LCD_SPI_TIMEOUT);
-      pData++;
+      while(Size--)
+      {
+        rgb888 = RGB565TO888(*pData);
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)&rgb888, 3, LCD_SPI_TIMEOUT);
+        pData++;
+      }
     }
-
-  HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
-  LcdSpiTransEnd();
+    HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
+    LcdSpiTransEnd();
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -576,6 +557,10 @@ void LCD_IO_Init(void)
   #if defined(LCD_SPI_SPD_WRITE)
   LCD_SPI_SETBAUDRATE(LCD_SPI_HANDLE, LCD_SPI_SPD_WRITE);
   #endif
+  LCD_DMA2D_HANDLE.XferCpltCallback  = Dma2dCpltCallback;
+  LCD_DMA2D_HANDLE.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
+  LCD_DMA2D_HANDLE.Init.ColorMode = DMA2D_OUTPUT_RGB888;
+  RedBlueOrder(LCD_DMA2D_HANDLE);
   LcdSpiTransInit();
 }
 
@@ -585,7 +570,7 @@ void LCD_IO_Init(void)
    - pData: 8 or 16 bits data pointer
    - Size: data number
    - DummySize: dummy byte number at read
-   - Mode: 8 or 16 or 24 bit mode, write or read, fill or multidata (see the LCD_IO_... defines) */
+   - Mode: 8 or 16 or 24 bit mode, write or read, fill or multidata (see the LCD_IO_... defines in "lcd.h") */
 void LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32_t DummySize, uint32_t Mode)
 {
   #if LCD_SPI_MODE == 0  /* only TX mode */
@@ -594,6 +579,9 @@ void LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32_t D
   #endif
 
   LcdSpiTransStart();
+
+  if(dmastatus.status)
+    while(1);
   HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
 
   /* Command write */
@@ -612,7 +600,7 @@ void LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32_t D
     return;
   }
 
-  /* Datas write or read */
+  /* Data write or read */
   #if LCD_SPI_MODE != 0
   if(Mode & LCD_IO_READ)
   { /* Read LCD */

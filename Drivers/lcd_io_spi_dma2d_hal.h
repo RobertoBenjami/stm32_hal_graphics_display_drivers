@@ -2,15 +2,21 @@
 /* Information section */
 
 /*
- * SPI HAL LCD driver for all stm32 family
+ * SPI HAL LCD driver with DMA2D (stm32f4xx, stm32f7xx, stm32h7xx)
  * author: Roberto Benjami
  * v.2022.11
+ *
+ * When should you use this driver?
+ *   If the display can only work in 24-bit (RGB888) mode in SPI mode,
+ *   and your controller have a DMA2D peripheral.
+ *   It can do the 16bit (RGB565) to 24bit (RGB888) conversion in the background 
+     without using the processor (only at write).
  */
 
 /* Features:
-   - only hardware SPI
-   - write function 8 and 16bit without DMA or with DMA (in both fill and bitmap mode)
-   - write function with bitdepth convert (16bit RGB565 to 24bit RGB888) only without DMA
+   - only hardware SPI and DMA2D with DMA
+   - write function 8 and 16bit with DMA (in both fill and bitmap mode)
+   - write function with bitdepth convert (16bit RGB565 to 24bit RGB888) with DMA2D
    - all writing functions are possible in both fill and bitmap mode
    - read function 8 and 16bit only without DMA
    - read function with bitdepth convert (24bit RGB888 to 16bit RGB565) only without DMA */
@@ -32,6 +38,11 @@
    - Lcd SCK name: LCD_SCK
    - Lcd reset pin name: LCD_RST (not required)
    - Lcd black light pin name: LCD_BL (not required)
+   DMA2D
+   - Transfer Mode: Memory to Memory With Pixel Format Conversion
+   - Color Mode: RGB888
+   - DMA2D Input Color Mode: RGB565
+   - DMA2D global interrupt enabled (check mark)
 */
 
 //=============================================================================
@@ -49,11 +60,14 @@ void LCD_IO_DmaTxCpltCallback(SPI_HandleTypeDef *hspi);
 //=============================================================================
 /* Setting section (please set the necessary things in this section) */
 
-#ifndef __LCD_IO_SPI_HAL_H__
-#define __LCD_IO_SPI_HAL_H__
+#ifndef __LCD_IO_SPI_DMA2D_HAL_H__
+#define __LCD_IO_SPI_DMA2D_HAL_H__
 
 /* SPI handle select (see in main.c file, default: hspi1, hspi2 ... hspi6) */
 #define LCD_SPI_HANDLE    hspi1
+
+/* DMA2D handle select (see in main.c file, default: hdma2d) */
+#define LCD_DMA2D_HANDLE  hdma2d
 
 /* SPI mode
    - 0: only TX (write on MOSI pin, no MISO pin)
@@ -72,11 +86,6 @@ void LCD_IO_DmaTxCpltCallback(SPI_HandleTypeDef *hspi);
 /* When data direction change (OUT->IN) there is a display that requires extra clock
    example ST7735: 1, ILI9341: 0, ILI9488: 0 */
 #define LCD_SCK_EXTRACLK  0
-
-/* DMA TX enable/disable
-   - 0: DMA disable
-   - 1: DMA enable */
-#define LCD_DMA_TX        0
 
 /* Waiting mode until the end of the previous DMA transaction
    - 0: while(dmastatus.txstatus);
@@ -100,13 +109,17 @@ void LCD_IO_DmaTxCpltCallback(SPI_HandleTypeDef *hspi);
    Example stm32h743 (the DTCMRAM and ITCMRAM are not DMA capable):
      #define LCD_DMA_UNABLE(addr)  (((addr < 0x24000000) && (addr >= 0x20000000)) || (addr < 0x08000000))
    Note: if we ensure that we do not draw a bitmap from a DMA-capable memory area, it is not necessary to set it (leave it that way) */
-#define LCD_DMA_UNABLE(addr)  0
+#define LCD_DMA_UNABLE(addr)     0
 
-/* RGB565 to RGB888 and RGB888 to RGB565 convert byte order
+/* RGB565 to RGB888 and RGB888 to RGB565 convert byte order 
    - 0: forward direction
    - 1: back direction
    (warning: the SPI DMA order is from low address to hight address step byte)
-   note: If the red and blue colors are reversed and used 24bit mode, change this value */
-#define LCD_IO_RGB24_ORDER    1
+   note: DMA2D can only convert bitmaps in the forward direction on the f4 and f7 families.
+         If the red and blue colors are reversed, change the LCD setting: e.g. ILI9341_COLORMODE. */
+#define  LCD_IO_RGB24_ORDER      0
+
+/* Buffer pixel number for DMA2D bitdepth conversion (byte = 3 * pixel number) */
+#define LCD_DMA2D_BUFFERSIZE   512
 
 #endif
