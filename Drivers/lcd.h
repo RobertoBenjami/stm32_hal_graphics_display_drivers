@@ -37,7 +37,8 @@
 
 /*
  * Modify:
- * ReadID return type: uint16_t to uint32_t
+   - ReadID return type: uint16_t to uint32_t (there is a display that has a 24-bit ID)
+   - Add the LCD_REVERSE16 macro (so that dma can be used on the fsmc 8-bit interface for bitmap drawing)
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -46,25 +47,26 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
+
+//=============================================================================
+/* Setting section (please set the necessary things in this section) */
+
+/* 16bit/pixel data byte order
+   - 0: no change (default)
+   - 1: change
+   note: Enter a value of 1 only if you use an 8-bit fmsc IO driver and want to use DMA to draw bitmap images.
+         The filling operation is DMA capable even with a value of 0.
+   attention: the byte order should also be in reverse order in memory blocks containing images,
+         because the displayed image will be incorrect. This is necessary because DMA can only write to the
+         fsmc 8-bit peripheral in ascending byte order, but the LCD display requires reverse pixel byte order. */
+#define  LCD_REVERSE16     0
+
+//=============================================================================
+/* Interface section */
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
-
-/* Mode bits */
-#define  LCD_IO_CMD8       (1 << 0)
-#define  LCD_IO_CMD16      (1 << 1)
-
-#define  LCD_IO_WRITE      (1 << 2)
-#define  LCD_IO_READ       (1 << 3)
-
-#define  LCD_IO_DATA8      (1 << 4)
-#define  LCD_IO_DATA16     (1 << 5)
-#define  LCD_IO_DATA24TO16 (1 << 6)  /* at read */
-#define  LCD_IO_DATA16TO24 (1 << 6)  /* at write */
-
-#define  LCD_IO_MULTIDATA  (1 << 7)
-#define  LCD_IO_FILL       (1 << 8)
 
 typedef struct
 {

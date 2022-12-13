@@ -71,15 +71,15 @@
 #define LCD_INIT_CLEAR           0
 
 /* some colors */
-#define LCD_COLOR_BLACK         RC(0x0000)
-#define LCD_COLOR_GRAY          RC(0xF7DE)
-#define LCD_COLOR_BLUE          RC(0x001F)
-#define LCD_COLOR_RED           RC(0xF800)
-#define LCD_COLOR_GREEN         RC(0x07E0)
-#define LCD_COLOR_CYAN          RC(0x07FF)
-#define LCD_COLOR_MAGENTA       RC(0xF81F)
-#define LCD_COLOR_YELLOW        RC(0xFFE0)
-#define LCD_COLOR_WHITE         RC(0xFFFF)
+#define LCD_COLOR_BLACK         LCD_COLOR(0, 0, 0)
+#define LCD_COLOR_GRAY          LCD_COLOR(192, 192, 192)
+#define LCD_COLOR_BLUE          LCD_COLOR(0, 0, 255)
+#define LCD_COLOR_RED           LCD_COLOR(255, 0, 0)
+#define LCD_COLOR_GREEN         LCD_COLOR(0, 255, 0)
+#define LCD_COLOR_CYAN          LCD_COLOR(0, 255, 255)
+#define LCD_COLOR_MAGENTA       LCD_COLOR(255, 0, 255)
+#define LCD_COLOR_YELLOW        LCD_COLOR(255, 255, 0)
+#define LCD_COLOR_WHITE         LCD_COLOR(255, 255, 255)
   
 //-----------------------------------------------------------------------------
 /* Interface section (no modify) */   
@@ -122,7 +122,7 @@ typedef enum
 #define LCD_ERROR      0x01
 #define LCD_TIMEOUT    0x02
 
-#if LCD_REVERSE == 1
+#if LCD_REVERSE16 == 1
 #define  RC(a)   ((((a) & 0xFF) << 8) | (((a) & 0xFF00) >> 8))
 #else
 #define  RC(a)   a
@@ -132,6 +132,7 @@ typedef enum
   * @brief  LCD color  
   */
 #define LCD_COLOR(r, g, b)      RC((r & 0xF8) << 8 | (g & 0xFC) << 3 | (b & 0xF8) >> 3)
+#define LCD_COLOR16(rgb16)      RC(rgb16)
 
 /** @defgroup STM32_ADAFRUIT_LCD_Exported_Functions
   * @{

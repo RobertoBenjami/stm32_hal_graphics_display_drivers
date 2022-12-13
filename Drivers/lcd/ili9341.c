@@ -13,10 +13,6 @@
 #include "bmp.h"
 #include "ili9341.h"
 
-/* Draw and read bitdeph (16: RGB565, 24: RGB888) */
-#define  ILI9341_WRITEBITDEPTH     16
-#define  ILI9341_READBITDEPTH      24
-
 // ILI9341 physic resolution (in 0 orientation)
 #define  ILI9341_LCD_PIXEL_WIDTH  240
 #define  ILI9341_LCD_PIXEL_HEIGHT 320
@@ -226,10 +222,14 @@ void     LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32
 /* Define the used transaction modes */
 #define  LCD_IO_WriteCmd8DataFill16(Cmd, Data, Size) \
   LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)&Data, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16 | LCD_IO_FILL)
+#define  LCD_IO_WriteCmd8DataFill16to24(Cmd, Data, Size) \
+  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)&Data, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16TO24 | LCD_IO_FILL)
 #define  LCD_IO_WriteCmd8MultipleData8(Cmd, pData, Size) \
   LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA8 | LCD_IO_MULTIDATA)
 #define  LCD_IO_WriteCmd8MultipleData16(Cmd, pData, Size) \
   LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16 | LCD_IO_MULTIDATA)
+#define  LCD_IO_WriteCmd8MultipleData16to24(Cmd, pData, Size) \
+  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16TO24 | LCD_IO_MULTIDATA)
 
 #define  LCD_IO_ReadCmd8MultipleData8(Cmd, pData, Size, DummySize) \
   LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, DummySize, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA8 | LCD_IO_MULTIDATA)
@@ -243,32 +243,31 @@ void     LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32
 #define  LCD_IO_DrawFill(Color, Size) \
   LCD_IO_WriteCmd8DataFill16(ILI9341_RAMWR, Color, Size)
 #define  LCD_IO_DrawBitmap(pData, Size) \
-  LCD_IO_Transaction(ILI9341_RAMWR, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16 | LCD_IO_MULTIDATA)
+  LCD_IO_WriteCmd8MultipleData16(ILI9341_RAMWR, pData, Size)
 #if ILI9341_READBITDEPTH == 16
-#define  LCD_IO_ReadBitmap(pData, Size) { \
-  LCD_IO_Transaction(ILI9341_RAMRD, (uint16_t *)pData, Size, 1, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA16 | LCD_IO_MULTIDATA); }
+#define  LCD_IO_ReadBitmap(pData, Size) \
+    LCD_IO_ReadCmd8MultipleData16(ILI9341_RAMRD, pData, Size, 1)
 #elif ILI9341_READBITDEPTH == 24
 #define  LCD_IO_ReadBitmap(pData, Size) { \
-  LCD_IO_Transaction(ILI9341_PIXFMT, (uint16_t *)"\66", 1, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA8 | LCD_IO_MULTIDATA); \
-  LCD_IO_Transaction(ILI9341_RAMRD, (uint16_t *)pData, Size, 1, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA24TO16 | LCD_IO_MULTIDATA); \
-  LCD_IO_Transaction(ILI9341_PIXFMT, (uint16_t *)"\55", 1, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA8 | LCD_IO_MULTIDATA); }
+  LCD_IO_WriteCmd8MultipleData8(ILI9341_PIXFMT, "\66", 1); \
+  LCD_IO_ReadCmd8MultipleData24to16(ILI9341_RAMRD, pData, Size, 1); \
+  LCD_IO_WriteCmd8MultipleData8(ILI9341_PIXFMT, "\55", 1); }
 #endif
 #elif ILI9341_WRITEBITDEPTH == 24
 #define  LCD_IO_DrawFill(Color, Size) \
-  LCD_IO_Transaction(ILI9341_RAMWR, (uint16_t *)&Color, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16TO24 | LCD_IO_FILL)
+    LCD_IO_WriteCmd8DataFill16to24(ILI9341_RAMWR, Color, Size)
 #define  LCD_IO_DrawBitmap(pData, Size) \
-  LCD_IO_Transaction(ILI9341_RAMWR, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16TO24 | LCD_IO_MULTIDATA)
+    LCD_IO_WriteCmd8MultipleData16to24(ILI9341_RAMWR, pData, Size)
 #if ILI9341_READBITDEPTH == 16
 #define  LCD_IO_ReadBitmap(pData, Size) { \
-  LCD_IO_Transaction(ILI9341_PIXFMT, (uint16_t *)"\55", 1, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA8 | LCD_IO_MULTIDATA); \
-  LCD_IO_Transaction(ILI9341_RAMRD, (uint16_t *)pData, Size, 1, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA16 | LCD_IO_MULTIDATA); \
-  LCD_IO_Transaction(ILI9341_PIXFMT, (uint16_t *)"\66", 1, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA8 | LCD_IO_MULTIDATA); }
+  LCD_IO_WriteCmd8MultipleData8(ILI9341_PIXFMT, "\55", 1); \
+  LCD_IO_ReadCmd8MultipleData16(ILI9341_RAMRD, pData, Size, 1); \
+  LCD_IO_WriteCmd8MultipleData8(ILI9341_PIXFMT, "\66", 1); }
 #elif ILI9341_READBITDEPTH == 24
-#define  LCD_IO_ReadBitmap(pData, Size) { \
-  LCD_IO_Transaction(ILI9341_RAMRD, (uint16_t *)pData, Size, 1, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA24TO16 | LCD_IO_MULTIDATA); }
+#define  LCD_IO_ReadBitmap(pData, Size) \
+  LCD_IO_ReadCmd8MultipleData24to16(ILI9341_RAMRD, pData, Size, 1)
 #endif
 #endif
-
 //-----------------------------------------------------------------------------
 /**
   * @brief  Enables the Display.

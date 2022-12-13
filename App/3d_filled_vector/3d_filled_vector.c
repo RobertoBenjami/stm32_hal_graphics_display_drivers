@@ -17,6 +17,16 @@
 /* BSP_LCD_... */
 #include "stm32_adafruit_lcd.h"
 
+/* check the defaultTask and Task2 stack owerflow (only freertos) */
+#define  STACKOWERFLOW_CHECK  1
+
+#if LCD_REVERSE16 == 0
+#define  RC(a)   a
+#endif
+#if LCD_REVERSE16 == 1
+#define  RC(a)   ((((a) & 0xFF) << 8) | (((a) & 0xFF00) >> 8))
+#endif
+
 //=============================================================================
 #ifndef osCMSIS
 #define Delay(t)              HAL_Delay(t)
@@ -29,13 +39,15 @@ void StartTask02(void const * argument);
 #define Delay(t)              osDelay(t)
 #define GetTime()             osKernelSysTick()
 osThreadId Task2Handle;
-osThreadDef(Task2, StartTask02, osPriorityLow, 0, 256);
+extern osThreadId defaultTaskHandle;
+osThreadDef(Task2, StartTask02, osPriorityLow, 0, 144);
 #else
 void StartTask02(void * argument);
 #define Delay(t)              osDelay(t)
 #define GetTime()             osKernelGetTickCount()
 osThreadId_t Task2Handle;
-const osThreadAttr_t t2_attributes = {.name = "Task2", .stack_size = 64, .priority = (osPriority_t) osPriorityLow,};
+extern osThreadId_t defaultTaskHandle;
+const osThreadAttr_t t2_attributes = {.name = "Task2", .stack_size = 144, .priority = (osPriority_t) osPriorityLow,};
 #endif
 #endif
 
@@ -159,11 +171,12 @@ void setup()
   e = BSP_LCD_Init();
   if(e == LCD_ERROR)
   {
-    printf("\r\nLcd Init Error\r\n");
+    // printf("\r\nLcd Init Error\r\n");
     while(1);
   }
 
   BSP_LCD_Clear(LCD_COLOR_BLACK);
+  BSP_LCD_SetFont(&FONTNAME);
   initStars();
 }
 
@@ -183,6 +196,17 @@ uint32_t cpuusage_calc(uint32_t t)
   }
   else
     cpuusage = 0;
+
+  #if STACKOWERFLOW_CHECK == 1
+  uint32_t wm;
+  wm = uxTaskGetStackHighWaterMark(Task2Handle);
+  if(!wm)
+    while(1);
+  wm = uxTaskGetStackHighWaterMark(defaultTaskHandle);
+  if(!wm)
+    while(1);
+  #endif
+
   task02_count = 0;
   return cpuusage;
 }
@@ -415,6 +439,28 @@ void StartTask02(void * argument)
 {
   for(;;)
   {
+    #ifdef LED1_NAME
+    taskENTER_CRITICAL();
+    #if LED_ACTIVE == 0
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_SET);
+    #elif LED_ACTIVE == 1
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_RESET);
+    #endif
+    taskEXIT_CRITICAL();
+    #endif
+    #ifdef LED2_NAME
+    taskENTER_CRITICAL();
+    #if LED_ACTIVE == 0
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_SET);
+    #elif LED_ACTIVE == 1
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_RESET);
+    #endif
+    taskEXIT_CRITICAL();
+    #endif
     if(task02_run)
       task02_count++;
   }

@@ -1,36 +1,11 @@
 /* LCD speed test program
- * The results displayed in printf.
- * The printf is redirected to SWO or UART.
+ * The results displayed in printf
  *
  * author: Roberto Benjami
- * version:  2021.11
+ * version:  2022.12
  */
 
-/* Bitmap and character test select
-   - 0: do not use the bitmap and character test
-   - 1: apply the bitmap and character test */
-#define BITMAP_TEST   1
-
-/* Pixel and Image read test and verify
-   - 0: test off
-   - 1: test on */
-#define READ_TEST     1
-
-/* Freertos also measures cpu usage
-   - 0: measure off
-   - 1: measure on */
-#define POWERMETER    1
-
-/* Test photo */
-#if BITMAP_TEST == 1
-#define rombitmap  beer_60x100_16
-#define ROMBITMAP_WIDTH  60
-#define ROMBITMAP_HEIGHT 100
-#endif
-
-/* Chapter delays */
-#define DELAY_CHAPTER    1000
-
+//-----------------------------------------------------------------------------
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -39,83 +14,103 @@
 #include "lcd.h"
 #include "bmp.h"
 
+#include "appLcdSpeedTest.h"
+
 /* BSP_LCD_... */
 #include "stm32_adafruit_lcd.h"
 
+/* Test photo */
+#if BITMAP_TEST == 1
+#define rombitmap             beer_60x100_16
+#define ROMBITMAP_WIDTH       60
+#define ROMBITMAP_HEIGHT      100
+#endif
+
+#define GPIO_Port_(a)         a ## _GPIO_Port
+#define GPIO_Port(a)          GPIO_Port_(a)
+#define Pin_(a)               a ## _Pin
+#define Pin(a)                Pin_(a)
+
 #ifdef  __CC_ARM
-#define random()   rand()
+#define random()              rand()
 #endif
 
 //-----------------------------------------------------------------------------
-// freertos vs HAL
-#ifdef  osCMSIS
-#if osCMSIS < 0x20000
-#define Delay(t)              osDelay(t)
-#define GetTime()             osKernelSysTick()
+#ifndef  osCMSIS
+/* no freertos */
+#define Delay(t)              HAL_Delay(t)
+#define GetTime()             HAL_GetTick()
+
+#define POWERMETER_START
+#define POWERMETER_STOP
+#define POWERMETER_REF
+#define POWERMETER_PRINT      Delay(10); printf("\r\n")
+
 #else
+/* freertos */
 #define Delay(t)              osDelay(t)
+volatile uint32_t task02_count = 0, task02_run = 0;
+uint32_t refcpuusage = 1;
+
+#if osCMSIS < 0x20000
+/* freertos V1 */
+
+#define GetTime()             osKernelSysTick()
+extern osThreadId defaultTaskHandle;
+void StartTask02(void const * argument);
+osThreadId Task2Handle;
+osThreadDef(Task2, StartTask02, osPriorityLow, 0, 144);
+
+#else
+/* freertos V2 */
+
 #define GetTime()             osKernelGetTickCount()
+extern osThreadId_t defaultTaskHandle;
+void StartTask02(void * argument);
+osThreadId_t Task2Handle;
+const osThreadAttr_t t2_attributes = {.name = "Task2", .stack_size = 256, .priority = (osPriority_t) osPriorityLow,};
+
+#endif
+/* common freertos V1 and freertos V2 */
+
+#if     POWERMETER == 1
+#define POWERMETER_START      {task02_count = 0; task02_run = 1;}
+#define POWERMETER_STOP       task02_run = 0
+
+#define POWERMETER_REF        {task02_run = 1; refcpuusage = task02_count / t;}
+#define POWERMETER_PRINT      {Delay(10); if(t) printf(", cpu usage:%d%%\r\n", (int)cpuusage_calc(t)); else printf("\r\n");}
 #endif
 
-volatile uint32_t task02_count = 0, task02_run = 0;
-volatile uint32_t task02_power = 0, cpuusage, refcpuusage = 1;
-
-void cpuusage_calc(uint32_t t)
+uint32_t cpuusage_calc(uint32_t t)
 {
+  uint32_t cpuusage;
   if(t)
   {
-    cpuusage = ((100 * task02_power) / t) / refcpuusage;
+    cpuusage = ((100 * task02_count) / t) / refcpuusage;
     if(cpuusage > 100)
       cpuusage = 100;
     cpuusage = 100 - cpuusage;
   }
   else
     cpuusage = 0;
+
+  #if STACKOWERFLOW_CHECK == 1
+  uint32_t wm;
+  wm = uxTaskGetStackHighWaterMark(Task2Handle);
+  if(!wm)
+    while(1);
+  wm = uxTaskGetStackHighWaterMark(defaultTaskHandle);
+  if(!wm)
+    while(1);
+  #endif
+
+  task02_count = 0;
+  return cpuusage;
 }
 
-#if     POWERMETER == 1
-#define POWERMETER_START      task02_count = 0; task02_run = 1;
-#define POWERMETER_STOP           \
-  {                               \
-    task02_power = task02_count;  \
-    task02_run = 0;               \
-    cpuusage_calc(t);             \
-  }
-
-#define POWERMETER_REF        refcpuusage = task02_power / t
-
-#define POWERMETER_PRINT      Delay(10); if(t) printf(", cpu usage:%d%%\r\n", (int)cpuusage); else printf("\r\n")
 #endif
-
-osTimerId myTimer01Handle;
-void cbTimer(void const * argument);
-
-#else
-#define Delay(t)              HAL_Delay(t)
-#define GetTime()             HAL_GetTick()
-#endif
-
-#ifndef POWERMETER_START
-#define POWERMETER_START
-#define POWERMETER_STOP
-#define POWERMETER_REF
-#define POWERMETER_PRINT      Delay(10); printf("\r\n")
-#endif
-
-// create 16bits color from RGB888 or BGR888
-#define RGB888TORGB565(r, g, b) ((r & 0xF8) << 8 | (g & 0xFC) << 3 | b >> 3)
-#define RGB888TOBGR565(r, g, b) (r >> 3 | (g & 0xFC) << 3 | (b & 0xF8) << 8)
 
 //-----------------------------------------------------------------------------
-#if LCD_REVERSE16 == 0
-#define RD(a)                 a
-#endif
-
-/* 16bit data byte change */
-#if LCD_REVERSE16 == 1
-#define RD(a)                 __REVSH(a)
-#endif
-
 #if BITMAP_TEST == 1
 extern const BITMAPSTRUCT rombitmap;
 #if READ_TEST == 1
@@ -124,25 +119,25 @@ uint16_t bitmap[ROMBITMAP_WIDTH * ROMBITMAP_HEIGHT];
 #endif
 
 //-----------------------------------------------------------------------------
-uint32_t ClearTest(void)
+uint32_t ClearTest(uint32_t n)
 {
   uint32_t ctStartT = GetTime();
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
+  for(uint32_t i = 0; i < n; i++)
+    BSP_LCD_Clear(LCD_COLOR_BLACK);
   return(GetTime() - ctStartT);
 }
 
 //-----------------------------------------------------------------------------
 uint32_t PixelTest(uint32_t n)
 {
-  uint16_t c, x, y;
+  uint16_t x, y;
 
   uint32_t ctStartT = GetTime();
   for(uint32_t i = 0; i < n; i++)
   {
     x = random() % BSP_LCD_GetXSize();
     y = random() % BSP_LCD_GetYSize();
-    c = random() % 0xFFFF;
-    BSP_LCD_DrawPixel(x, y, c);
+    BSP_LCD_DrawPixel(x, y, LCD_COLOR16(random() & 0xFFFF));
   }
   return(GetTime() - ctStartT);
 }
@@ -159,7 +154,7 @@ uint32_t LineTest(uint32_t n)
     y1 = random() % BSP_LCD_GetYSize();
     x2 = random() % BSP_LCD_GetXSize();
     y2 = random() % BSP_LCD_GetYSize();
-    BSP_LCD_SetTextColor(RD(random() % 0xFFFF));
+    BSP_LCD_SetTextColor(LCD_COLOR16(random() & 0xFFFF));
     BSP_LCD_DrawLine(x1, y1, x2, y2);
   }
   return(GetTime() - ctStartT);
@@ -177,7 +172,7 @@ uint32_t FillRectTest(uint32_t n)
     h = random() % (BSP_LCD_GetYSize() >> 1);
     x = random() % (BSP_LCD_GetXSize() - w);
     y = random() % (BSP_LCD_GetYSize() - h);
-    BSP_LCD_SetTextColor(RD(random() % 0xFFFF));
+    BSP_LCD_SetTextColor(LCD_COLOR16(random() & 0xFFFF));
     BSP_LCD_FillRect(x, y, w, h);
   }
   return(GetTime() - ctStartT);
@@ -208,8 +203,8 @@ uint32_t CharTest(uint32_t n)
 
     x = random() % (BSP_LCD_GetXSize() - fp->Width);
     y = random() % (BSP_LCD_GetYSize() - fp->Height);
-    BSP_LCD_SetTextColor(RD(random() % 0xFFFF));
-    BSP_LCD_SetBackColor(RD(random() % 0xFFFF));
+    BSP_LCD_SetTextColor(LCD_COLOR16(random() & 0xFFFF));
+    BSP_LCD_SetBackColor(LCD_COLOR16(random() & 0xFFFF));
 
     c = random() % 96 + ' ';
     BSP_LCD_DisplayChar(x, y, c);
@@ -220,7 +215,7 @@ uint32_t CharTest(uint32_t n)
 //-----------------------------------------------------------------------------
 uint32_t CircleTest(uint32_t n)
 {
-  uint16_t c, x, y, r, rmax;
+  uint16_t x, y, r, rmax;
 
   rmax = BSP_LCD_GetXSize();
   if(rmax > BSP_LCD_GetYSize())
@@ -236,8 +231,7 @@ uint32_t CircleTest(uint32_t n)
 
     x = random() % (BSP_LCD_GetXSize() - (r << 1)) + r;
     y = random() % (BSP_LCD_GetYSize() - (r << 1)) + r;
-    c = random() % 0xFFFF;
-    BSP_LCD_SetTextColor(RD(c));
+    BSP_LCD_SetTextColor(LCD_COLOR16(random() & 0xFFFF));
     BSP_LCD_DrawCircle(x, y, r);
   }
   return(GetTime() - ctStartT);
@@ -246,7 +240,7 @@ uint32_t CircleTest(uint32_t n)
 //-----------------------------------------------------------------------------
 uint32_t FillCircleTest(uint32_t n)
 {
-  uint16_t c, x, y, r, rmax;
+  uint16_t x, y, r, rmax;
 
   rmax = BSP_LCD_GetXSize();
   if(rmax > BSP_LCD_GetYSize())
@@ -262,8 +256,7 @@ uint32_t FillCircleTest(uint32_t n)
 
     x = random() % (BSP_LCD_GetXSize() - (r << 1)) + r;
     y = random() % (BSP_LCD_GetYSize() - (r << 1)) + r;
-    c = random() % 0xFFFF;
-    BSP_LCD_SetTextColor(RD(c));
+    BSP_LCD_SetTextColor(LCD_COLOR16(random() & 0xFFFF));
     BSP_LCD_FillCircle(x, y, r);
   }
   return(GetTime() - ctStartT);
@@ -272,7 +265,7 @@ uint32_t FillCircleTest(uint32_t n)
 //-----------------------------------------------------------------------------
 uint32_t ColorTest(void)
 {
-  uint16_t c_rgb565, xs, ys;
+  uint16_t xs, ys;
   uint8_t  cy;
 
   uint32_t ctStartT = GetTime();
@@ -281,20 +274,16 @@ uint32_t ColorTest(void)
   for(uint16_t x = 0; x < xs; x++)
   {
     cy = (uint32_t)(x << 8) / xs;
-    c_rgb565 = RGB888TORGB565(cy, cy, cy);
-    BSP_LCD_SetTextColor(RD(c_rgb565));
+    BSP_LCD_SetTextColor(LCD_COLOR(cy, cy, cy));
     BSP_LCD_DrawVLine(x, 0, ys >> 2);
 
-    c_rgb565 = RGB888TORGB565(cy, 0, 0);
-    BSP_LCD_SetTextColor(RD(c_rgb565));
+    BSP_LCD_SetTextColor(LCD_COLOR(cy, 0, 0));
     BSP_LCD_DrawVLine(x, ys >> 2, ys >> 2);
 
-    c_rgb565 = RGB888TORGB565(0, cy, 0);
-    BSP_LCD_SetTextColor(RD(c_rgb565));
+    BSP_LCD_SetTextColor(LCD_COLOR(0, cy, 0));
     BSP_LCD_DrawVLine(x, ys >> 1, ys >> 2);
 
-    c_rgb565 = RGB888TORGB565(0, 0, cy);
-    BSP_LCD_SetTextColor(RD(c_rgb565));
+    BSP_LCD_SetTextColor(LCD_COLOR(0, 0, cy));
     BSP_LCD_DrawVLine(x, (ys >> 1) + (ys >> 2), ys >> 2);
   }
   return(GetTime() - ctStartT);
@@ -320,9 +309,9 @@ uint32_t BitmapTest(uint32_t n)
 //-----------------------------------------------------------------------------
 uint32_t ScrollTest(uint32_t n)
 {
-  uint32_t t;
   uint16_t ss, o, tf, bf;
   int16_t  i;
+  uint32_t ctStartT = GetTime();
   ss = BSP_LCD_GetXSize();
   o = 0;
   if(BSP_LCD_GetYSize() > ss)
@@ -351,24 +340,21 @@ uint32_t ScrollTest(uint32_t n)
     BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - rombitmap.infoHeader.biWidth) / 2, tf, (uint8_t *)&rombitmap);
     ss -= (tf + bf + rombitmap.infoHeader.biHeight);
   }
-  t = GetTime();
   i = 0;
   while(i < ss)
   {
-    while(GetTime() < (t + 20));
-    t = GetTime();
+    Delay(20);
     BSP_LCD_Scroll(i, tf, bf);
     i++;
   }
   do
   {
     i--;
-    while(GetTime() < t + 20);
-    t = GetTime();
+    Delay(20);
     BSP_LCD_Scroll(i, tf, bf);
   } while(i > 0);
 
-  while(GetTime() < t + 1000);
+  Delay(1000);
 
   BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
   if(o == 0)
@@ -381,37 +367,34 @@ uint32_t ScrollTest(uint32_t n)
     BSP_LCD_FillRect((BSP_LCD_GetXSize() - rombitmap.infoHeader.biWidth) / 2, tf, rombitmap.infoHeader.biWidth, rombitmap.infoHeader.biHeight);
     BSP_LCD_DrawBitmap((BSP_LCD_GetXSize() - rombitmap.infoHeader.biWidth) / 2, BSP_LCD_GetYSize() - rombitmap.infoHeader.biHeight - bf, (uint8_t *)&rombitmap);
   }
-  t = GetTime();
   i = 0;
   while(i > 0 - ss)
   {
-    while(GetTime() < (t + 20));
-    t = GetTime();
+    Delay(20);
     BSP_LCD_Scroll(i, tf, bf);
     i--;
   }
   do
   {
     i++;
-    while(GetTime() < t + 20);
-    t = GetTime();
+    Delay(20);
     BSP_LCD_Scroll(i, tf, bf);
   } while(i < 0);
 
-  while(GetTime() < t + 1000);
+  Delay(1000);
 
   i = -500;
   while(i < 500)
   {
-    while(GetTime() < t + 10);
-    t = GetTime();
+    Delay(10);
     BSP_LCD_Scroll(i, tf, bf);
     i++;
   }
 
-  while(GetTime() < t + 1000);
+  Delay(1000);
   BSP_LCD_Scroll(0, 0, 0);
-  return 0;
+  ctStartT = GetTime() - ctStartT;
+  return ctStartT;
 }
 
 //-----------------------------------------------------------------------------
@@ -490,22 +473,6 @@ uint32_t ReadImageTest(uint32_t n)
 #endif /* #if BITMAP_TEST == 1 */
 
 //-----------------------------------------------------------------------------
-#ifdef osCMSIS
-void StartTask02(void * argument);
-
-#if osCMSIS < 0x20000
-
-osThreadId Task2Handle;
-osThreadDef(Task2, StartTask02, osPriorityLow, 0, 256);
-
-#else
-
-osThreadId_t Task2Handle;
-const osThreadAttr_t t2_attributes = {.name = "Task2", .stack_size = 512 * 4, .priority = (osPriority_t) osPriorityLow,};
-
-#endif
-#endif
-
 void mainApp(void)
 {
   #ifdef osCMSIS
@@ -527,18 +494,8 @@ void mainApp(void)
   t = random();
 
   Delay(100);
-  printf("Display ID = %X\r\n", (unsigned int)BSP_LCD_ReadID());
+  printf("\r\nDisplay ID = %X\r\n", (unsigned int)BSP_LCD_ReadID());
   Delay(100);
-
-  #if 0
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
-  Delay(DELAY_CHAPTER);
-  t = ReadPixelTest(1);
-  t = ReadImageTest(1);
-  Delay(DELAY_CHAPTER);
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
-  // ScrollTest(0);
-  #endif 
 
   while(1)
   {
@@ -556,16 +513,16 @@ void mainApp(void)
     Delay(DELAY_CHAPTER);
 
     POWERMETER_START;
-    t = ClearTest();
+    t = ClearTest(10);
     POWERMETER_STOP;
-    printf("Clear Test: %d ms", (int)t);
+    printf("Clear Test (10x): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
     POWERMETER_START;
     t = PixelTest(100000);
     POWERMETER_STOP;
-    printf("Pixel Test: %d ms", (int)t);
+    printf("Pixel Test (100000 pixel): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -573,7 +530,7 @@ void mainApp(void)
     POWERMETER_START;
     t = LineTest(1000);
     POWERMETER_STOP;
-    printf("Line Test: %d ms", (int)t);
+    printf("Line Test (1000 lines): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -581,15 +538,15 @@ void mainApp(void)
     POWERMETER_START;
     t = FillRectTest(250);
     POWERMETER_STOP;
-    printf("Fill Rect Test: %d ms", (int)t);
+    printf("Fill Rect Test (250 rect): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     POWERMETER_START;
-    t = CircleTest(DELAY_CHAPTER);
+    t = CircleTest(1000);
     POWERMETER_STOP;
-    printf("Circle Test: %d ms", (int)t);
+    printf("Circle Test (1000 circles): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -597,7 +554,7 @@ void mainApp(void)
     POWERMETER_START;
     t = FillCircleTest(250);
     POWERMETER_STOP;
-    printf("Fill Circle Test: %d ms", (int)t);
+    printf("Fill Circle Test (250 circles): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -606,7 +563,7 @@ void mainApp(void)
     POWERMETER_START;
     t = CharTest(5000);
     POWERMETER_STOP;
-    printf("Char Test: %d ms", (int)t);
+    printf("Char Test (5000 char): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -614,7 +571,7 @@ void mainApp(void)
     POWERMETER_START;
     t = BitmapTest(100);
     POWERMETER_STOP;
-    printf("Bitmap Test: %d ms", (int)t);
+    printf("Bitmap Test (100 bitmap): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -623,7 +580,7 @@ void mainApp(void)
     POWERMETER_START;
     t = ReadPixelTest(20);
     POWERMETER_STOP;
-    printf("ReadPixel Test: %d ms", (int)t);
+    printf("ReadPixel Test (20x bitmap read): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
@@ -631,14 +588,17 @@ void mainApp(void)
     POWERMETER_START;
     t = ReadImageTest(20);
     POWERMETER_STOP;
-    printf("ReadImage Test: %d ms", (int)t);
+    printf("ReadImage Test (20x bitmap read): %d ms", (int)t);
     POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
     #endif
 
     BSP_LCD_Clear(LCD_COLOR_BLACK);
-    ScrollTest(0);
-    printf("Scroll Test\r\n");
+    POWERMETER_START;
+    t = ScrollTest(0);
+    POWERMETER_STOP;
+    printf("Scroll Test: %d ms", (int)t);
+    POWERMETER_PRINT;
     Delay(DELAY_CHAPTER);
 
     #endif /* #if BITMAP_TEST == 1 */
@@ -664,10 +624,36 @@ void mainApp(void)
 
 //-----------------------------------------------------------------------------
 /* The other task constantly increases one counter */
+#if osCMSIS < 0x20000
+void StartTask02(void const * argument)
+#else
 void StartTask02(void * argument)
+#endif
 {
-  for(;;)
+  while(1)
   {
+    #ifdef LED1_NAME
+    taskENTER_CRITICAL();
+    #if LED_ACTIVE == 0
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_SET);
+    #elif LED_ACTIVE == 1
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIO_Port(LED1_NAME), Pin(LED1_NAME), GPIO_PIN_RESET);
+    #endif
+    taskEXIT_CRITICAL();
+    #endif
+    #ifdef LED2_NAME
+    taskENTER_CRITICAL();
+    #if LED_ACTIVE == 0
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_SET);
+    #elif LED_ACTIVE == 1
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIO_Port(LED2_NAME), Pin(LED2_NAME), GPIO_PIN_RESET);
+    #endif
+    taskEXIT_CRITICAL();
+    #endif
     if(task02_run)
       task02_count++;
   }

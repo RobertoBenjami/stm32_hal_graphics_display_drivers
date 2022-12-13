@@ -263,7 +263,7 @@ void BSP_LCD_ClearStringLine(uint16_t Line)
 void BSP_LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
 {
   DrawChar(Xpos, Ypos, &DrawProp.pFont->table[(Ascii-' ') *\
-    DrawProp.pFont->Height * ((DrawProp.pFont->Width + 7) / 8)]);
+                        DrawProp.pFont->Height * ((DrawProp.pFont->Width + 7) / 8)]);
 }
 
 /**
@@ -353,10 +353,7 @@ void BSP_LCD_DisplayStringAtLine(uint16_t Line, uint8_t *ptr)
   */
 void BSP_LCD_DrawPixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGB_Code)
 {
-  if(lcd_drv->WritePixel != NULL)
-  {
-    lcd_drv->WritePixel(Xpos, Ypos, RGB_Code);
-  }
+  lcd_drv->WritePixel(Xpos, Ypos, RGB_Code);
 }
   
 /**
@@ -368,19 +365,7 @@ void BSP_LCD_DrawPixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGB_Code)
   */
 void BSP_LCD_DrawHLine(uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
-  uint32_t index = 0;
-  
-  if(lcd_drv->DrawHLine != NULL)
-  {
-    lcd_drv->DrawHLine(DrawProp.TextColor, Xpos, Ypos, Length);
-  }
-  else
-  {
-    for(index = 0; index < Length; index++)
-    {
-      BSP_LCD_DrawPixel((Xpos + index), Ypos, DrawProp.TextColor);
-    }
-  }
+  lcd_drv->DrawHLine(DrawProp.TextColor, Xpos, Ypos, Length);
 }
 
 /**
@@ -392,19 +377,7 @@ void BSP_LCD_DrawHLine(uint16_t Xpos, uint16_t Ypos, uint16_t Length)
   */
 void BSP_LCD_DrawVLine(uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
-  uint32_t index = 0;
-  
-  if(lcd_drv->DrawVLine != NULL)
-  {
-    lcd_drv->DrawVLine(DrawProp.TextColor, Xpos, Ypos, Length);
-  }
-  else
-  {
-    for(index = 0; index < Length; index++)
-    {
-      BSP_LCD_DrawPixel(Xpos, Ypos + index, DrawProp.TextColor);
-    }
-  }
+  lcd_drv->DrawVLine(DrawProp.TextColor, Xpos, Ypos, Length);
 }
 
 /**
@@ -622,11 +595,7 @@ void BSP_LCD_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pBmp)
   
   SetDisplayWindow(Xpos, Ypos, width, height);
   
-  if(lcd_drv->DrawBitmap != NULL)
-  {
-    lcd_drv->DrawBitmap(Xpos, Ypos, pBmp);
-  } 
-  // SetDisplayWindow(0, 0, BSP_LCD_GetXSize(), BSP_LCD_GetYSize());
+  lcd_drv->DrawBitmap(Xpos, Ypos, pBmp);
 }
 
 /**
@@ -848,19 +817,13 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
     pchar = ((uint8_t *)pChar + (width + 7)/8 * counterh);
     
     if(((width + 7)/8) == 3)
-    {
       line =  (pchar[0]<< 16) | (pchar[1]<< 8) | pchar[2];
-    }
     
     if(((width + 7)/8) == 2)
-    {
       line =  (pchar[0]<< 8) | pchar[1];
-    }
     
     if(((width + 7)/8) == 1)
-    {
       line =  pchar[0];
-    }    
     
     for (counterw = 0; counterw < width; counterw++)
     {
@@ -868,15 +831,9 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
       /* Need to invert image in the bitmap */
       index = (((height-counterh-1)*width)+(counterw))*2+OFFSET_BITMAP;
       if(line & (1 << (width- counterw + offset- 1))) 
-      {
-        bitmap[index] = (uint8_t)DrawProp.TextColor;
-        bitmap[index+1] = (uint8_t)(DrawProp.TextColor >> 8);
-      }
+        *(uint16_t *)(&bitmap[index]) = DrawProp.TextColor;
       else
-      {
-        bitmap[index] = (uint8_t)DrawProp.BackColor;
-        bitmap[index+1] = (uint8_t)(DrawProp.BackColor >> 8);
-      } 
+        *(uint16_t *)(&bitmap[index]) = DrawProp.BackColor;
     }
   }
   BSP_LCD_DrawBitmap(Xpos, Ypos, bitmap);
@@ -984,10 +941,7 @@ void BSP_LCD_FillTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, ui
   */
 static void SetDisplayWindow(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Height)
 {
-  if(lcd_drv->SetDisplayWindow != NULL)
-  {
-    lcd_drv->SetDisplayWindow(Xpos, Ypos, Width, Height);
-  }  
+  lcd_drv->SetDisplayWindow(Xpos, Ypos, Width, Height);
 }
 
 /**
@@ -997,10 +951,7 @@ static void SetDisplayWindow(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint1
   */
 uint32_t BSP_LCD_ReadID(void)
 {
-  if(lcd_drv->ReadID)
-    return lcd_drv->ReadID();
-  else
-    return 0;
+  return lcd_drv->ReadID();
 }
 
 /**
@@ -1011,10 +962,7 @@ uint32_t BSP_LCD_ReadID(void)
   */
 uint16_t BSP_LCD_ReadPixel(uint16_t Xpos, uint16_t Ypos)
 {
-  if(lcd_drv->ReadPixel != NULL)
-    return lcd_drv->ReadPixel(Xpos, Ypos);
-  else
-    return 0;
+  return lcd_drv->ReadPixel(Xpos, Ypos);
 }
 
 /**
@@ -1080,6 +1028,5 @@ void BSP_LCD_DataRead16(uint16_t Cmd, uint16_t *ptr, uint32_t Size)
 {
   lcd_drv->UserCommand(Cmd, (uint8_t *)ptr, Size, 2);
 }
-
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

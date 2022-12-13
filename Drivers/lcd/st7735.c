@@ -11,13 +11,8 @@
 #include <string.h>
 #include "main.h"
 #include "lcd.h"
+#include "lcd_io.h"
 #include "st7735.h"
-
-#define  ST7735_COLORMODE         0   /* 0 = RGB, 1 = BGR */
-
-// ST7735 Size (physical resolution in the default (0) orientation)
-#define  ST7735_LCD_PIXEL_WIDTH   128
-#define  ST7735_LCD_PIXEL_HEIGHT  160
 
 void     st7735_Init(void);
 uint32_t st7735_ReadID(void);
@@ -140,30 +135,30 @@ union
 
 #if ST7735_COLORMODE == 0
 #define ST7735_MAD_COLORMODE  ST7735_MAD_RGB
-#else
+#elif ST7735_COLORMODE == 1
 #define ST7735_MAD_COLORMODE  ST7735_MAD_BGR
 #endif
 
 #if (ST7735_ORIENTATION == 0)
 #define ST7735_SIZE_X                     ST7735_LCD_PIXEL_WIDTH
 #define ST7735_SIZE_Y                     ST7735_LCD_PIXEL_HEIGHT
-#define ST7735_MAD_DATA_RIGHT_THEN_UP     ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_UP
-#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_DOWN
+#define ST7735_MAD_DATA_RIGHT_THEN_UP     (ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_UP)
+#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   (ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_DOWN)
 #elif (ST7735_ORIENTATION == 1)
 #define ST7735_SIZE_X                     ST7735_LCD_PIXEL_HEIGHT
 #define ST7735_SIZE_Y                     ST7735_LCD_PIXEL_WIDTH
-#define ST7735_MAD_DATA_RIGHT_THEN_UP     ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_DOWN | ST7735_MAD_VERTICAL
-#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_DOWN | ST7735_MAD_VERTICAL
+#define ST7735_MAD_DATA_RIGHT_THEN_UP     (ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_DOWN | ST7735_MAD_VERTICAL)
+#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   (ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_DOWN | ST7735_MAD_VERTICAL)
 #elif (ST7735_ORIENTATION == 2)
 #define ST7735_SIZE_X                     ST7735_LCD_PIXEL_WIDTH
 #define ST7735_SIZE_Y                     ST7735_LCD_PIXEL_HEIGHT
-#define ST7735_MAD_DATA_RIGHT_THEN_UP     ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_DOWN
-#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_UP
+#define ST7735_MAD_DATA_RIGHT_THEN_UP     (ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_DOWN)
+#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   (ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_UP)
 #elif (ST7735_ORIENTATION == 3)
 #define ST7735_SIZE_X                     ST7735_LCD_PIXEL_HEIGHT
 #define ST7735_SIZE_Y                     ST7735_LCD_PIXEL_WIDTH
-#define ST7735_MAD_DATA_RIGHT_THEN_UP     ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_UP   | ST7735_MAD_VERTICAL
-#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_UP   | ST7735_MAD_VERTICAL
+#define ST7735_MAD_DATA_RIGHT_THEN_UP     (ST7735_MAD_COLORMODE | ST7735_MAD_X_RIGHT | ST7735_MAD_Y_UP   | ST7735_MAD_VERTICAL)
+#define ST7735_MAD_DATA_RIGHT_THEN_DOWN   (ST7735_MAD_COLORMODE | ST7735_MAD_X_LEFT  | ST7735_MAD_Y_UP   | ST7735_MAD_VERTICAL)
 #endif
 
 #define ST7735_SETWINDOW(x1, x2, y1, y2) \
@@ -176,28 +171,78 @@ union
 #define ST7735_LCD_INITIALIZED    0x01
 #define ST7735_IO_INITIALIZED     0x02
 static  uint8_t   Is_st7735_Initialized = 0;
+
+const uint8_t EntryRightThenUp = ST7735_MAD_DATA_RIGHT_THEN_UP;
+const uint8_t EntryRightThenDown = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+
+/* the last set drawing direction is stored here */
+uint16_t LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+
 static  uint16_t  yStart, yEnd;
 
 //-----------------------------------------------------------------------------
-/* Link function for LCD peripheral */
-void     LCD_Delay (uint32_t delay);
-void     LCD_IO_Init(void);
-void     LCD_IO_Bl_OnOff(uint8_t Bl);
-void     LCD_IO_Transaction(uint16_t Cmd, uint16_t *pData, uint32_t Size, uint32_t DummySize, uint32_t Mode);
+#if ST7735_WRITEBITDEPTH == ST7735_READBITDEPTH
+/* 16/16 and 24/24 bit, no need to change bitdepth data */
+#define SetWriteDir()
+#define SetReadDir()
+#else /* #if ST7735_WRITEBITDEPTH == ST7735_READBITDEPTH */
+uint8_t lastdir = 0;
+#if ST7735_WRITEBITDEPTH == 16
+/* 16/24 bit */
+#define SetWriteDir() {                                     \
+  if(lastdir != 0)                                          \
+  {                                                         \
+    LCD_IO_WriteCmd8MultipleData8(ST7735_COLMOD, "\55", 1); \
+    lastdir = 0;                                            \
+  }                                                         }
+#define SetReadDir() {                                      \
+  if(lastdir == 0)                                          \
+  {                                                         \
+    LCD_IO_WriteCmd8MultipleData8(ST7735_COLMOD, "\66", 1); \
+    lastdir = 1;                                            \
+  }                                                         }
+#elif ST7735_WRITEBITDEPTH == 24
+/* 24/16 bit */
+#define SetWriteDir() {                                     \
+  if(lastdir != 0)                                          \
+  {                                                         \
+    LCD_IO_WriteCmd8MultipleData8(ST7735_COLMOD, "\66", 1); \
+    lastdir = 0;                                            \
+  }                                                         }
+#define SetReadDir() {                                      \
+  if(lastdir == 0)                                          \
+  {                                                         \
+    LCD_IO_WriteCmd8MultipleData8(ST7735_COLMOD, "\55", 1); \
+    lastdir = 1;                                            \
+  }                                                         }
+#endif /* #elif ST7735_WRITEBITDEPTH == 24 */
+#endif /* #else ST7735_WRITEBITDEPTH == ST7735_READBITDEPTH */
 
-#define  LCD_IO_WriteCmd8DataFill16(Cmd, Data, Size) \
-  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)&Data, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16 | LCD_IO_FILL)
-#define  LCD_IO_WriteCmd8MultipleData8(Cmd, pData, Size) \
-  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA8 | LCD_IO_MULTIDATA)
-#define  LCD_IO_WriteCmd8MultipleData16(Cmd, pData, Size) \
-  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, 0, LCD_IO_CMD8 | LCD_IO_WRITE | LCD_IO_DATA16 | LCD_IO_MULTIDATA)
+#if ST7735_WRITEBITDEPTH == 16
+#define  LCD_IO_DrawFill(Color, Size) { \
+  SetWriteDir(); \
+  LCD_IO_WriteCmd8DataFill16(ST7735_RAMWR, Color, Size); }           /* Fill 16 bit pixel(s) */
+#define  LCD_IO_DrawBitmap(pData, Size) { \
+  SetWriteDir(); \
+  LCD_IO_WriteCmd8MultipleData16(ST7735_RAMWR, pData, Size); }       /* Draw 16 bit bitmap */
+#elif ST7735_WRITEBITDEPTH == 24
+#define  LCD_IO_DrawFill(Color, Size) { \
+  SetWriteDir(); \
+  LCD_IO_WriteCmd8DataFill16to24(ST7735_RAMWR, Color, Size); }       /* Fill 24 bit pixel(s) from 16 bit color code */
+#define  LCD_IO_DrawBitmap(pData, Size) { \
+  SetWriteDir(); \
+  LCD_IO_WriteCmd8MultipleData16to24(ST7735_RAMWR, pData, Size); }   /* Draw 24 bit Lcd bitmap from 16 bit bitmap data */
+#endif /* #elif ST7735_WRITEBITDEPTH == 24 */
 
-#define  LCD_IO_ReadCmd8MultipleData8(Cmd, pData, Size, DummySize) \
-  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, DummySize, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA8 | LCD_IO_MULTIDATA)
-#define  LCD_IO_ReadCmd8MultipleData16(Cmd, pData, Size, DummySize) \
-  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, DummySize, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA16 | LCD_IO_MULTIDATA)
-#define  LCD_IO_ReadCmd8MultipleData24to16(Cmd, pData, Size, DummySize) \
-  LCD_IO_Transaction((uint16_t)Cmd, (uint16_t *)pData, Size, DummySize, LCD_IO_CMD8 | LCD_IO_READ | LCD_IO_DATA24TO16 | LCD_IO_MULTIDATA)
+#if ST7735_READBITDEPTH == 16
+#define  LCD_IO_ReadBitmap(pData, Size) { \
+  SetReadDir(); \
+  LCD_IO_ReadCmd8MultipleData16(ST7735_RAMRD, pData, Size, 1); }     /* Read 16 bit LCD */
+#elif ST7735_READBITDEPTH == 24
+#define  LCD_IO_ReadBitmap(pData, Size) { \
+  SetReadDir(); \
+  LCD_IO_ReadCmd8MultipleData24to16(ST7735_RAMRD, pData, Size, 1); } /* Read 24 bit Lcd and convert to 16 bit bitmap */
+#endif /* #elif ST7735_READBITDEPTH == 24 */
 
 //-----------------------------------------------------------------------------
 void st7735_Init(void)
@@ -229,7 +274,12 @@ void st7735_Init(void)
   // Power Control 3 (Vcom)
   LCD_IO_WriteCmd8MultipleData8(ST7735_VMCTR1, (uint8_t *)"\x00\x12\x80", 3);
 
+  #if ST7735_WRITEBITDEPTH == 16
   LCD_IO_WriteCmd8MultipleData8(ST7735_COLMOD, (uint8_t *)"\x55", 1); // Interface Pixel Format (16 bit)
+  #elif ST7735_WRITEBITDEPTH == 24
+  LCD_IO_WriteCmd8MultipleData8(ST7735_COLMOD, (uint8_t *)"\x66", 1); // Interface Pixel Format (16 bit)
+  #endif
+
   #if ST7735_SPIMODE == 0
   LCD_IO_WriteCmd8MultipleData8(0xB0, (uint8_t *)"\x80", 1); // Interface Mode Control (SDO NOT USE)
   #elif ST7735_SPIMODE == 1
@@ -241,9 +291,12 @@ void st7735_Init(void)
   LCD_IO_WriteCmd8MultipleData8(0xE9, (uint8_t *)"\x00", 1);// Set Image Functio (Disable 24 bit data)
   LCD_IO_WriteCmd8MultipleData8(0xF7, (uint8_t *)"\xA9\x51\x2C\x82", 4);// Adjust Control (D7 stream, loose)
 
-  transdata.d8[0] = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
-  LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, (uint8_t *)&transdata, 1);
+  LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
   LCD_IO_WriteCmd8MultipleData8(ST7735_SLPOUT, NULL, 0);    // Exit Sleep
+  #if ST7735_INITCLEAR == 1
+  st7735_FillRect(0, 0, ST7735_SIZE_X, ST7735_SIZE_Y, 0x0000);
+  LCD_Delay(10);
+  #endif
   LCD_IO_WriteCmd8MultipleData8(ST7735_DISPON, NULL, 0);    // Display on
 }
 
@@ -328,8 +381,13 @@ void st7735_SetCursor(uint16_t Xpos, uint16_t Ypos)
   */
 void st7735_WritePixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGBCode)
 {
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   ST7735_SETCURSOR(Xpos, Ypos);
-  LCD_IO_WriteCmd8DataFill16(ST7735_RAMWR, RGBCode, 1);
+  LCD_IO_DrawFill(RGBCode, 1);
 }
 
 
@@ -342,8 +400,13 @@ void st7735_WritePixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGBCode)
 uint16_t st7735_ReadPixel(uint16_t Xpos, uint16_t Ypos)
 {
   uint16_t ret;
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   ST7735_SETCURSOR(Xpos, Ypos);
-  LCD_IO_ReadCmd8MultipleData24to16(ST7735_RAMRD, &ret, 1, 1);
+  LCD_IO_ReadBitmap(&ret, 1);
   return(ret);
 }
 
@@ -373,8 +436,13 @@ void st7735_SetDisplayWindow(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint1
   */
 void st7735_DrawHLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   ST7735_SETWINDOW(Xpos, Xpos + Length - 1, Ypos, Ypos);
-  LCD_IO_WriteCmd8DataFill16(ST7735_RAMWR, RGBCode, Length);
+  LCD_IO_DrawFill(RGBCode, Length);
 }
 
 //-----------------------------------------------------------------------------
@@ -388,8 +456,13 @@ void st7735_DrawHLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t L
   */
 void st7735_DrawVLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   ST7735_SETWINDOW(Xpos, Xpos, Ypos, Ypos + Length - 1);
-  LCD_IO_WriteCmd8DataFill16(ST7735_RAMWR, RGBCode, Length);
+  LCD_IO_DrawFill(RGBCode, Length);
 }
 
 //-----------------------------------------------------------------------------
@@ -404,8 +477,13 @@ void st7735_DrawVLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t L
   */
 void st7735_FillRect(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysize, uint16_t RGBCode)
 {
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   ST7735_SETWINDOW(Xpos, Xpos + Xsize - 1, Ypos, Ypos + Ysize - 1);
-  LCD_IO_WriteCmd8DataFill16(ST7735_RAMWR, RGBCode, Xsize * Ysize);
+  LCD_IO_DrawFill(RGBCode, Xsize * Ysize);
 }
 
 //-----------------------------------------------------------------------------
@@ -429,15 +507,15 @@ void st7735_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
   size = (size - index)/2;
   pbmp += index;
 
-  transdata.d8[0] = ST7735_MAD_DATA_RIGHT_THEN_UP;
-  LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, (uint8_t *)&transdata, 1);
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_UP)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_UP;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenUp, 1);
+  }
   transdata.d16[0] = ST7735_SIZE_Y - 1 - yEnd;
   transdata.d16[1] = ST7735_SIZE_Y - 1 - yStart;
   LCD_IO_WriteCmd8MultipleData16(ST7735_PASET, &transdata, 2);
-
-  LCD_IO_WriteCmd8MultipleData16(ST7735_RAMWR, (uint16_t *)pbmp, size);
-  transdata.d8[0] = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
-  LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, (uint8_t *)&transdata, 1);
+  LCD_IO_DrawBitmap(pbmp, size);
 }
 
 //-----------------------------------------------------------------------------
@@ -453,8 +531,13 @@ void st7735_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
   */
 void st7735_DrawRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysize, uint16_t *pData)
 {
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   st7735_SetDisplayWindow(Xpos, Ypos, Xsize, Ysize);
-  LCD_IO_WriteCmd8MultipleData16(ST7735_RAMWR, pData, Xsize * Ysize);
+  LCD_IO_DrawBitmap(pData, Xsize * Ysize);
 }
 
 //-----------------------------------------------------------------------------
@@ -470,8 +553,13 @@ void st7735_DrawRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t 
   */
 void st7735_ReadRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysize, uint16_t *pData)
 {
+  if(LastEntry != ST7735_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ST7735_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ST7735_MADCTL, &EntryRightThenDown, 1);
+  }
   st7735_SetDisplayWindow(Xpos, Ypos, Xsize, Ysize);
-  LCD_IO_ReadCmd8MultipleData24to16(ST7735_RAMRD, pData, Xsize * Ysize, 1);
+  LCD_IO_ReadBitmap(pData, Xsize * Ysize);
 }
 
 //-----------------------------------------------------------------------------

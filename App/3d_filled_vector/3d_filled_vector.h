@@ -24,9 +24,21 @@
    - 1 Double buffer enabled */
 #define DOUBLEBUF    1
 
+/* Font size (Font8 or Font12 or Font16 or Font20 or Font24) */
+#define FONTNAME     Font12
+
 /* Button pin assign: button pin user label in Cube */
-#define BUTTON_NAME  BTN1
+#define BUTTON_NAME  BT_K0
 
 /* Button pin active level (0 or 1) */
-#define BUTTON_ON    1
+#define BUTTON_ON    0
 
+/* Leds pin assign: leds pin user label in Cube
+   note: If no have a led -> delete or commented this defines */
+#define LED1_NAME    LED0
+#define LED2_NAME    LED1
+
+/* Led activ state
+   - 0 Led on if pin state is reset
+   - 1 Led on if pin state is set */
+#define LED_ACTIVE   0
