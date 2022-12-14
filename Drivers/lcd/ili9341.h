@@ -17,3 +17,7 @@
    note: my SPI ILI9341 LCD only readable if ILI9341_READBITDEPTH 24 */
 #define  ILI9341_WRITEBITDEPTH     16
 #define  ILI9341_READBITDEPTH      24
+
+// ILI9341 physic resolution (in 0 orientation)
+#define  ILI9341_LCD_PIXEL_WIDTH  240
+#define  ILI9341_LCD_PIXEL_HEIGHT 320

@@ -3,11 +3,6 @@
 #include "lcd_io.h"
 #include "ili9488.h"
 
-/* ILI9488 Size (physical resolution in default orientation) */
-#define  ILI9488_LCD_PIXEL_WIDTH   320
-#define  ILI9488_LCD_PIXEL_HEIGHT  480
-
-// Lcd
 void     ili9488_Init(void);
 uint32_t ili9488_ReadID(void);
 void     ili9488_DisplayOn(void);
@@ -203,7 +198,7 @@ const uint8_t EntryRightThenUp = ILI9488_MAD_DATA_RIGHT_THEN_UP;
 const uint8_t EntryRightThenDown = ILI9488_MAD_DATA_RIGHT_THEN_DOWN;
 
 /* the last set drawing direction is stored here */
-uint16_t LastEntry = ILI9488_MAD_DATA_RIGHT_THEN_DOWN;
+uint8_t LastEntry = ILI9488_MAD_DATA_RIGHT_THEN_DOWN;
 
 //-----------------------------------------------------------------------------
 /* Pixel draw and read functions */
@@ -482,6 +477,11 @@ void ili9488_SetDisplayWindow(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint
   */
 void ili9488_DrawHLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
+  if(LastEntry != ILI9488_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ILI9488_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ILI9488_MADCTL, &EntryRightThenDown, 1);
+  }
   ili9488_FillRect(Xpos, Ypos, Length, 1, RGBCode);
 }
 
@@ -496,6 +496,11 @@ void ili9488_DrawHLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t 
   */
 void ili9488_DrawVLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
+  if(LastEntry != ILI9488_MAD_DATA_RIGHT_THEN_DOWN)
+  {
+    LastEntry = ILI9488_MAD_DATA_RIGHT_THEN_DOWN;
+    LCD_IO_WriteCmd8MultipleData8(ILI9488_MADCTL, &EntryRightThenDown, 1);
+  }
   ili9488_FillRect(Xpos, Ypos, 1, Length, RGBCode);
 }
 

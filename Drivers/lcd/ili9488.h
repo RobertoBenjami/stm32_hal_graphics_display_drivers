@@ -26,3 +26,7 @@
          my paralell 8 bit ILI9488 LCD can work in 16/16, 16/24, 24/16, 24/24 bit depth */
 #define ILI9488_WRITEBITDEPTH 24
 #define ILI9488_READBITDEPTH  24
+
+/* ILI9488 Size (physical resolution in default orientation) */
+#define  ILI9488_LCD_PIXEL_WIDTH   320
+#define  ILI9488_LCD_PIXEL_HEIGHT  480
