@@ -70,7 +70,7 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 
 /* SPI write and read speed (if deleted -> setting in CUBE)
    - hardware SPI clock div fPCLK: 0=/2, 1=/4, 2=/8, 3=/16, 4=/32, 5=/64, 6=/128, 7=/256 */
-#define LCD_SPI_SPD_WRITE     3
+#define LCD_SPI_SPD_WRITE     1
 #define LCD_SPI_SPD_READ      4
 
 /* Backlight control (the logical level of the active state) */
@@ -114,6 +114,6 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 
 /* Pixel buffer size for DMA bitdepth conversion (buffer size [byte] = 3 * pixel buffer size)
    note: if 0 -> does not use DMA for 24-bit drawing and reading */
-#define LCD_RGB24_BUFFSIZE    0
+#define LCD_RGB24_BUFFSIZE    256
 
 #endif
