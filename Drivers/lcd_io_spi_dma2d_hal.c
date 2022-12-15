@@ -437,28 +437,28 @@ void LCDWriteFillMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
     if(Mode & LCD_IO_FILL)
     { /* fill */
       while(Size--) /* fill 8 and 16bit */
-        HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)pData, 1, LCD_SPI_TIMEOUT);
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, pData, 1, LCD_SPI_TIMEOUT);
     }
     else
     { /* multidata */
       while(Size)
       {
-        uint16_t trSize;
+        uint16_t trsize;
         if(Size > DMA_MAXSIZE)
         {
-          trSize = DMA_MAXSIZE;
+          trsize = DMA_MAXSIZE;
           Size -= DMA_MAXSIZE;
         }
         else
         {
-          trSize = Size;
+          trsize = Size;
           Size = 0;
         }
-        HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)pData, trSize, LCD_SPI_TIMEOUT);
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, pData, trsize, LCD_SPI_TIMEOUT);
         if(Mode & LCD_IO_DATA8)
-          pData += trSize;
+          pData += trsize;
         else
-          pData += (uint32_t)trSize << 1;
+          pData += (trsize << 1);
       }
     }
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
@@ -531,7 +531,7 @@ void LCDWriteFillMultiData16to24(uint8_t * pData, uint32_t Size, uint32_t Mode)
         trsize = LCD_RGB24_BUFFSIZE;
       else
         trsize = Size;
-      FillConvert16to24(*pData, lcd_rgb24_buffer, trsize);
+      FillConvert16to24(*(uint16_t *)pData, lcd_rgb24_buffer, trsize);
       while(Size)
       {
         if(Size > LCD_RGB24_BUFFSIZE)
@@ -670,9 +670,9 @@ void LCDReadMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
   }
   else
   #endif
-  uint32_t trsize;
   while(Size)
   {
+    uint32_t trsize;
     if(Size > DMA_MAXSIZE)
     {
       trsize = DMA_MAXSIZE;
