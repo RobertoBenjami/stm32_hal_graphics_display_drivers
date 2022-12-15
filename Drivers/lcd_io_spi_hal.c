@@ -581,7 +581,7 @@ void LCDWriteFillMultiData16to24(uint8_t * pData, uint32_t Size, uint32_t Mode)
         trsize = LCD_RGB24_BUFFSIZE;
       else
         trsize = Size;
-      FillConvert16to24(*pData, lcd_rgb24_buffer, trsize);
+      FillConvert16to24(*(uint16_t *)pData, lcd_rgb24_buffer, trsize);
       while(Size)
       {
         if(Size > LCD_RGB24_BUFFSIZE)
