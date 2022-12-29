@@ -5,9 +5,10 @@
  */
 
 //=============================================================================
+/* Setting section (please set the necessary things in this section) */
 
 /* SPI handle select (see in main.c file, default: hspi1, hspi2 ... hspi6) */
 #define TS_SPI_HANDLE         hspi1
 
-/* these constants can be defined with the application appTouchCalib.c */
-#define TS_CINDEX             {1762408, -6696, -157114, 622430562, -116657, -5119, 456792831}
+/* Wait time before reading xpt2046 (see: TS_IO_Transaction and TS_IO_Delay dunctions) */
+#define XPT2046_READDELAY     0
