@@ -155,8 +155,6 @@ union
 #define ILI9341_SIZE_Y                     ILI9341_LCD_PIXEL_HEIGHT
 #define ILI9341_MAD_DATA_RIGHT_THEN_UP     (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_RIGHT | ILI9341_MAD_Y_UP)
 #define ILI9341_MAD_DATA_RIGHT_THEN_DOWN   (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_RIGHT | ILI9341_MAD_Y_DOWN)
-#define XPOS                               Xpos
-#define YPOS                               Ypos
 #define XSIZE                              Xsize
 #define YSIZE                              Ysize
 #define XSTEP                              1
@@ -166,8 +164,6 @@ union
 #define ILI9341_SIZE_Y                     ILI9341_LCD_PIXEL_WIDTH
 #define ILI9341_MAD_DATA_RIGHT_THEN_UP     (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_RIGHT | ILI9341_MAD_Y_DOWN | ILI9341_MAD_VERTICAL)
 #define ILI9341_MAD_DATA_RIGHT_THEN_DOWN   (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_LEFT  | ILI9341_MAD_Y_DOWN | ILI9341_MAD_VERTICAL)
-#define XPOS                               Ypos
-#define YPOS                               Xpos
 #define XSIZE                              Ysize
 #define YSIZE                              Xsize
 #define XSTEP                              ILI9341_LCD_PIXEL_WIDTH
@@ -177,8 +173,6 @@ union
 #define ILI9341_SIZE_Y                     ILI9341_LCD_PIXEL_HEIGHT
 #define ILI9341_MAD_DATA_RIGHT_THEN_UP     (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_LEFT  | ILI9341_MAD_Y_DOWN)
 #define ILI9341_MAD_DATA_RIGHT_THEN_DOWN   (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_LEFT  | ILI9341_MAD_Y_UP)
-#define XPOS                               Xpos
-#define YPOS                               Ypos
 #define XSIZE                              Xsize
 #define YSIZE                              Ysize
 #define XSTEP                              1
@@ -188,8 +182,6 @@ union
 #define ILI9341_SIZE_Y                     ILI9341_LCD_PIXEL_WIDTH
 #define ILI9341_MAD_DATA_RIGHT_THEN_UP     (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_LEFT  | ILI9341_MAD_Y_UP   | ILI9341_MAD_VERTICAL)
 #define ILI9341_MAD_DATA_RIGHT_THEN_DOWN   (ILI9341_MAD_COLORMODE | ILI9341_MAD_X_RIGHT | ILI9341_MAD_Y_UP   | ILI9341_MAD_VERTICAL)
-#define XPOS                               Ypos
-#define YPOS                               Xpos
 #define XSIZE                              Ysize
 #define YSIZE                              Xsize
 #define XSTEP                              ILI9341_LCD_PIXEL_WIDTH

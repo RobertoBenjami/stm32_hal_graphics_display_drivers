@@ -60,13 +60,13 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 #define __LCD_IO_SPI_HAL_H__
 
 /* SPI handle select (see in main.c file, default: hspi1, hspi2 ... hspi6) */
-#define LCD_SPI_HANDLE        hspi1
+#define LCD_SPI_HANDLE        hspi5
 
 /* SPI mode
    - 0: only TX (write on MOSI pin, no MISO pin)
    - 1: half duplex (MOSI pin is bidirectional)
    - 2: full duplex (write on MOSI pin, read on MISO pin) */
-#define LCD_SPI_MODE          0
+#define LCD_SPI_MODE          2
 
 /* SPI write and read speed (if deleted -> setting in CUBE)
    - hardware SPI clock div fPCLK: 0=/2, 1=/4, 2=/8, 3=/16, 4=/32, 5=/64, 6=/128, 7=/256 */
@@ -83,7 +83,7 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 /* DMA TX/RX enable/disable
    - 0: DMA disable
    - 1: DMA enable */
-#define LCD_DMA_TX            0
+#define LCD_DMA_TX            1
 #define LCD_DMA_RX            0
 
 /* In dma mode the bitmap drawing function is completed before the actual drawing.
@@ -110,10 +110,10 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
    - 1: back direction
    (warning: the SPI DMA order is from low address to hight address step byte)
    note: If the red and blue colors are reversed and used 24bit mode, change this value */
-#define LCD_RGB24_ORDER       0
+#define LCD_RGB24_ORDER       1
 
 /* Pixel buffer size for DMA bitdepth conversion (buffer size [byte] = 3 * pixel buffer size)
    note: if 0 -> does not use DMA for 24-bit drawing and reading */
-#define LCD_RGB24_BUFFSIZE    256
+#define LCD_RGB24_BUFFSIZE    0
 
 #endif

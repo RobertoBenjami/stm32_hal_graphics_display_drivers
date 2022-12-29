@@ -862,9 +862,9 @@ void LCD_IO_Bl_OnOff(uint8_t Bl)
 void LCD_IO_Init(void)
 {
   #if defined(LCD_RST_GPIO_Port) && defined (LCD_RST_Pin)
-  LCD_Delay(10);
+  LCD_Delay(50);
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
-  LCD_Delay(10);
+  LCD_Delay(50);
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
   #endif
   #if LCD_SPI_MODE != 0
