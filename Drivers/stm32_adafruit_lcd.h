@@ -131,8 +131,8 @@ typedef enum
 /** 
   * @brief  LCD color  
   */
-#define LCD_COLOR(r, g, b)      RC((r & 0xF8) << 8 | (g & 0xFC) << 3 | (b & 0xF8) >> 3)
-#define LCD_COLOR16(rgb16)      RC(rgb16)
+#define LCD_COLOR(r, g, b)      (RC((r & 0xF8) << 8 | (g & 0xFC) << 3 | (b & 0xF8) >> 3))
+#define LCD_COLOR16(rgb16)      (RC(rgb16))
 
 /** @defgroup STM32_ADAFRUIT_LCD_Exported_Functions
   * @{

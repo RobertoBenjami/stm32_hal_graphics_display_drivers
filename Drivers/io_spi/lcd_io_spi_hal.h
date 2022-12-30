@@ -60,7 +60,7 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 #define __LCD_IO_SPI_HAL_H__
 
 /* SPI handle select (see in main.c file, default: hspi1, hspi2 ... hspi6) */
-#define LCD_SPI_HANDLE        hspi5
+#define LCD_SPI_HANDLE        hspi1
 
 /* SPI mode
    - 0: only TX (write on MOSI pin, no MISO pin)
