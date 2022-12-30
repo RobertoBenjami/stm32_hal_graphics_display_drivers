@@ -23,6 +23,9 @@
 /* note:
    - LCD_SPI_TIMEOUT: HAL_SPI_Transmit and HAL_SPI_Receive timeout value */
 
+/* SPI clock pin default state */
+#define  LCDTS_SPI_DEFSTATE   0
+
 //-----------------------------------------------------------------------------
 /* Bitdepth convert macros */
 #if LCD_RGB24_ORDER == 0
@@ -136,8 +139,6 @@ static inline void LcdSpiMode16(void)
 #elif (LCD_SPI_MODE == 1) || (LCD_SPI_MODE == 2)
 /* Half duplex and full duplex mode */
 
-uint8_t  lcdspidefstate = 0;  /* Default logic state of SPI SCK pin */
-
 //-----------------------------------------------------------------------------
 /* Switch from SPI write mode to SPI read mode, read the dummy bits, modify the SPI speed */
 void LcdDirRead(uint32_t DummySize)
@@ -150,8 +151,8 @@ void LcdDirRead(uint32_t DummySize)
   LL_GPIO_SetPinMode(LCD_SCK_GPIO_Port, LCD_SCK_Pin, LL_GPIO_MODE_OUTPUT); /* GPIO mode = output */
   while(DummySize--)
   { /* Dummy pulses */
-    HAL_GPIO_WritePin(LCD_SCK_GPIO_Port, LCD_SCK_Pin, 1 - lcdspidefstate);
-    HAL_GPIO_WritePin(LCD_SCK_GPIO_Port, LCD_SCK_Pin, lcdspidefstate);
+    HAL_GPIO_WritePin(LCD_SCK_GPIO_Port, LCD_SCK_Pin, 1 - LCD_SPI_DEFSTATE);
+    HAL_GPIO_WritePin(LCD_SCK_GPIO_Port, LCD_SCK_Pin, LCD_SPI_DEFSTATE);
   }
   LL_GPIO_SetPinMode(LCD_SCK_GPIO_Port, LCD_SCK_Pin, LL_GPIO_MODE_ALTERNATE); /* GPIO mode = alternative */
   #if defined(LCD_SPI_SPD_WRITE) && defined(LCD_SPI_SPD_READ) && (LCD_SPI_SPD_WRITE != LCD_SPI_SPD_READ)
@@ -816,11 +817,6 @@ void LCD_IO_Init(void)
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
   LCD_Delay(10);
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
-  #endif
-  #if LCD_SPI_MODE != 0
-  if(LCD_SPI_HANDLE.Instance->CR1 & SPI_CR1_CPOL)
-    lcdspidefstate = 1;
-  HAL_GPIO_WritePin(LCD_SCK_GPIO_Port, LCD_SCK_Pin, lcdspidefstate);
   #endif
   LCD_Delay(10);
   #if defined(LCD_SPI_SPD_WRITE)
