@@ -13,18 +13,18 @@
 #include "lcd_io_spi_hal.h"
 
 //-----------------------------------------------------------------------------
-#define  DMA_MINSIZE       0x0010
-#define  DMA_MAXSIZE       0xFFFE
+#define  DMA_MINSIZE          0x0010
+#define  DMA_MAXSIZE          0xFFFE
 /* note:
    - DMA_MINSIZE: if the transacion Size < DMA_MINSIZE -> not use the DMA for transaction
    - DMA_MAXSIZE: if the transacion Size > DMA_MAXSIZE -> multiple DMA transactions (because DMA transaction size register is 16bit) */
 
-#define  LCD_SPI_TIMEOUT   HAL_MAX_DELAY
+#define  LCD_SPI_TIMEOUT      HAL_MAX_DELAY
 /* note:
    - LCD_SPI_TIMEOUT: HAL_SPI_Transmit and HAL_SPI_Receive timeout value */
 
 /* SPI clock pin default state */
-#define  LCDTS_SPI_DEFSTATE   0
+#define  LCD_SPI_DEFSTATE     0
 
 //-----------------------------------------------------------------------------
 /* Bitdepth convert macros */
