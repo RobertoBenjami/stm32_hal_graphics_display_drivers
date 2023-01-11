@@ -222,7 +222,7 @@ uint8_t lastdir = 0;
     LCD_IO_WriteCmd8MultipleData8(ILI9341_PIXFMT, "\66", 1); \
     lastdir = 1;                                             \
   }                                                          }
-#elif ILI9488_WRITEBITDEPTH == 24
+#elif ILI9341_WRITEBITDEPTH == 24
 /* 24/16 bit */
 #define SetWriteDir() {                                      \
   if(lastdir != 0)                                           \
