@@ -8,8 +8,6 @@
  * version:  2023.01
  */
 
-#define  MODE24BIT       0
-
 #include "main.h"
 #include "lcd.h"
 #include "lcd_io.h"
@@ -317,76 +315,82 @@ void LCDWriteFillMultiData16to24(uint16_t * pData, uint32_t Size, uint32_t Mode)
     uint32_t c24;
   }rgb888;
 
-  #if MODE24BIT == 0
-  uint8_t ccnt = 0, ccarry = 0; /* color counter, color carry */
-  #endif
+  #if LCD_RGB24_MODE == 0
+  uint8_t ccnt = 0, ctmp = 0; /* color counter  (even and odd pixels), color temp */
 
   if(Mode & LCD_IO_FILL)
   { /* fill 16bit to 24bit */
     rgb888.c24 = RGB565TO888(*pData);
     while(Size--)
     {
-      #if MODE24BIT == 0
       if(!ccnt)
       {
+        ccnt = 1;
         LCDWrite16((rgb888.c8[2] << 8) | rgb888.c8[1]);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
         LCDWrite16((rgb888.c8[0] << 8) | rgb888.c8[2]);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
-        ccnt = 1;
       }
       else
       {
+        ccnt = 0;
         LCDWrite16((rgb888.c8[1] << 8) | rgb888.c8[0]);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
-        ccnt = 0;
       }
-      #elif MODE24BIT == 1
-      LCDWrite16(rgb888.c16[0]);
-      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
-      LCDWrite16(rgb888.c16[1]);
-      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
-      #endif
     }
   }
   else
   { /* multidata 16bit to 24bit */
-    #if MODE24BIT == 0
     while(Size--)
     {
       rgb888.c24 = RGB565TO888(*pData);
       pData++;
       if(!ccnt)
       {
+        ccnt = 1;
         LCDWrite16((rgb888.c8[2] << 8) | rgb888.c8[1]);
-        ccarry = rgb888.c8[0];
+        ctmp = rgb888.c8[0];
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
-        ccnt = 1;
       }
       else
       {
-        LCDWrite16((ccarry << 8) | rgb888.c8[2]);
-        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
-        LCDWrite16((rgb888.c8[1] << 8) | rgb888.c8[0]);
-        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
         ccnt = 0;
+        LCDWrite16((ctmp << 8) | rgb888.c8[2]);
+        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
+        LCDWrite16(rgb888.c16[0]);
+        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
       }
     }
     if(!ccnt)
     {
-      LCDWrite16(ccarry << 8);
+      LCDWrite16(ctmp << 8);
       HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
     }
-    #elif MODE24BIT == 1
+  }
+
+  #elif LCD_RGB24_MODE == 1
+  if(Mode & LCD_IO_FILL)
+  { /* fill 16bit to 24bit */
+    rgb888.c24 = RGB565TO888(*pData);
+    while(Size--)
+    {
+      LCDWrite16(rgb888.c16[0]);
+      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
+      LCDWrite16(rgb888.c16[1]);
+      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
+    }
+  }
+  else
+  { /* multidata 16bit to 24bit */
     while(Size--)
     {
       rgb888.c24 = RGB565TO888(*pData++);
@@ -397,8 +401,8 @@ void LCDWriteFillMultiData16to24(uint16_t * pData, uint32_t Size, uint32_t Mode)
       HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(LCD_WR_GPIO_Port, LCD_WR_Pin, GPIO_PIN_SET);
     }
-    #endif
   }
+  #endif
 }
 
 //=============================================================================
@@ -426,13 +430,10 @@ void LCDReadMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
     }
     else
     { /* 16bit */
-      uint16_t dt16;
       while(Size--)
       {
         HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_RESET);
-        //*(uint16_t *)pData = LCDRead16();
-        dt16 = LCDRead16();
-        *(uint16_t *)pData = dt16;
+        *(uint16_t *)pData = LCDRead16();
         HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_SET);
         pData += 2;
       }
@@ -449,19 +450,51 @@ void LCDReadMultiData24to16(uint16_t * pData, uint32_t Size, uint32_t Mode)
   union
   {
     uint8_t  c8[4];
+    uint16_t c16[2];
     uint32_t c24;
   }rgb888;
 
-  { /* not DMA mode */
-    while(Size--)
+  #if LCD_RGB24_MODE == 0
+  uint8_t ccnt = 0, ctmp = 0; /* color counter (even and odd pixels), color temp */
+  while(Size--)
+  {
+    if(!ccnt)
     {
-      rgb888.c8[0] = LCDRead8();
-      rgb888.c8[1] = LCDRead8();
-      rgb888.c8[2] = LCDRead8();
-      *pData = RGB888TO565(rgb888.c24);
-      pData++;
+      ccnt = 1;
+      HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_RESET);
+      rgb888.c16[1] = LCDRead16();
+      HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_RESET);
+      rgb888.c16[0] = LCDRead16();
+      HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_SET);
+      ctmp = rgb888.c8[0];
+      rgb888.c24 >>= 8;
     }
+    else
+    {
+      ccnt = 0;
+      HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_RESET);
+      rgb888.c16[0] = LCDRead16();
+      HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_SET);
+      rgb888.c8[2] = ctmp;
+    }
+    *pData = RGB888TO565(rgb888.c24);
+    pData++;
   }
+
+  #elif LCD_RGB24_MODE == 1
+  while(Size--)
+  {
+    HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_RESET);
+    rgb888.c16[0] = LCDRead16();
+    HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_RESET);
+    rgb888.c16[1] = LCDRead16();
+    HAL_GPIO_WritePin(LCD_RD_GPIO_Port, LCD_RD_Pin, GPIO_PIN_SET);
+    *pData = RGB888TO565(rgb888.c24);
+    pData++;
+  }
+  #endif
 }
 
 #endif /* #if LCD_DATADIR == 1 */

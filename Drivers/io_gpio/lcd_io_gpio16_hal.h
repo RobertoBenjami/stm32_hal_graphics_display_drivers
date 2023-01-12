@@ -10,13 +10,16 @@
 /* Data direction
    - 0: only draw mode
    - 1: bidirectional mode */
-#define LCD_DATADIR           0
+#define LCD_DATADIR           1
 
 /* RGB565 to RGB888 and RGB888 to RGB565 convert byte order
    - 0: forward direction
    - 1: back direction
    note: If the red and blue colors are reversed and used 24bit mode, change this value */
-#define LCD_RGB24_ORDER       0
+#define LCD_RGB24_ORDER       1
+
+/* 24bit color write mode and read mode (ILI9341: if MDT=="00"-> 0, if MDT=="01"->1) */
+#define LCD_RGB24_MODE        0
 
 /*=============================================================================
 I/O group optimization so that GPIO operations are not performed bit by bit:
@@ -56,8 +59,8 @@ The example belongs to the following pins:
   GPIOE->MODER = (GPIOE->MODER & ~0b11111111111111111100000000000000); }
 // datapins write, STM32 -> LCD (write I/O pins from dt data)
 #define LCD_WRITE(dt) { /* D14..15 <- dt0..1, D0..1 <- dt2..3, D8..10 <- dt13..15, E7..15 <- dt4..12 */ \
-  GPIOD->ODR = (GPIOD->ODR & ~0b1100011100000011) | (((dt & 0b11) << 14) | ((dt & 0b1100) >> 2) | ((dt & 0b1110000000000000) >> 5)); \
-  GPIOE->ODR = (GPIOE->ODR & ~0b1111111110000000) | ((dt & 0b0001111111110000) << 3); }
+  GPIOD->BSRR = (0b1100011100000011 << 16) | (((dt & 0b11) << 14) | ((dt & 0b1100) >> 2) | ((dt & 0b1110000000000000) >> 5)); \
+  GPIOE->BSRR = (0b1111111110000000 << 16) | ((dt & 0b0001111111110000) << 3); }
 // datapins read, STM32 <- LCD (read from I/O pins and store to dt data)
 #define LCD_READ(dt) { /* dt0..1 <- D14..15, dt2..3 <- D0..1, dt13..15 <- D8..10, dt4..12 <- E7..15 */ \
   dt = ((GPIOD->IDR & 0b1100000000000000) >> 14) | ((GPIOD->IDR & 0b0000000000000011) << 2) | \
