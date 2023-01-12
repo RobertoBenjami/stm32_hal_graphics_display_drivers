@@ -1,20 +1,20 @@
 /*
- * 8 bit paralell LCD FSMC driver for all stm32 family
- * 5 controll pins (CS, RS, WR, RD, RST) + 8 data pins + 1 backlight pin
+ * 16 bit paralell LCD FSMC driver
+ * 5 controll pins (CS, RS, WR, RD, RST) + 16 data pins + 1 backlight pin
  */
 
 /*
  * Author: Roberto Benjami
- * version:  2022.12
+ * version:  2023.01
  */
 
 #include "main.h"
 #include "lcd.h"
 #include "lcd_io.h"
-#include "lcd_io_fsmc8_hal.h"
+#include "lcd_io_fsmc16_hal.h"
 
 //-----------------------------------------------------------------------------
-#define  DMA_MINSIZE       0x0040
+#define  DMA_MINSIZE       0x0010
 #define  DMA_MAXSIZE       0xFFFE
 /* note:
    - DMA_MINSIZE: if the transacion Size < DMA_MINSIZE -> not use the DMA for transaction
@@ -34,7 +34,7 @@
 #define LCD_REVERSE16         0
 #endif
 
-#define LCD_ADDR_DATA         (LCD_ADDR_BASE + (1 << LCD_REGSELECT_BIT))
+#define LCD_ADDR_DATA         (LCD_ADDR_BASE + (3 << LCD_REGSELECT_BIT))
 
 //=============================================================================
 
@@ -73,13 +73,6 @@ struct
   uint16_t data;              /* fill operation data for DMA */
 }dmastatus;
 
-#if LCD_RGB24_BUFFSIZE < DMA_MINSIZE
-#undef  LCD_RGB24_BUFFSIZE
-#define LCD_RGB24_BUFFSIZE 0
-#else
-uint8_t lcd_rgb24_dma_buffer[LCD_RGB24_BUFFSIZE * 3 + 1];
-#endif  /* #else LCD_RGB24_BUFFSIZE < DMA_MINSIZE */
-
 //-----------------------------------------------------------------------------
 #ifndef  osCMSIS
 /* DMA mode on, Freertos off mode */
@@ -87,22 +80,25 @@ uint8_t lcd_rgb24_dma_buffer[LCD_RGB24_BUFFSIZE * 3 + 1];
 #define LcdTransInit()
 
 #if LCD_DMA_ENDWAIT == 0
-#define LcdTransStart()       {while(dmastatus.status);}
+#define LcdTransStart()       {while((volatile uint32_t)(dmastatus.status));}
 #define LcdDmaWaitEnd(d)
 #elif LCD_DMA_ENDWAIT == 1
-#define LcdTransStart()       {while(dmastatus.status);}
-#define LcdDmaWaitEnd(d)      {if(d) while(dmastatus.status);}
+#define LcdTransStart()       {while((volatile uint32_t)dmastatus.status);}
+#define LcdDmaWaitEnd(d)      {if(d) while((volatile uint32_t)dmastatus.status);}
 #elif LCD_DMA_ENDWAIT == 2
 #define LcdTransStart()
-#define LcdDmaWaitEnd(d)      {while(dmastatus.status);}
+#define LcdDmaWaitEnd(d)      {while((volatile uint32_t)dmastatus.status);}
 #endif  /* #elif LCD_DMA_ENDWAIT == 2 */
 
 #define LcdTransEnd()
 
 #define LcdDmaTransEnd()      {dmastatus.status = 0;}
 
+
 #else    /* #ifndef osCMSIS */
 /* Freertos mode */
+
+#define LCDDMASIGNAL  1
 
 //-----------------------------------------------------------------------------
 #if osCMSIS < 0x20000
@@ -163,7 +159,7 @@ uint32_t LCD_IO_DmaBusy(void)
 
 #endif /* #else LCD_DMA_TX == 0 && LCD_DMA_RX == 0 */
 
-//=============================================================================
+//-----------------------------------------------------------------------------
 /* TX DMA */
 #if LCD_DMA_TX == 1
 
@@ -172,41 +168,6 @@ uint32_t LCD_IO_DmaBusy(void)
 __weak void LCD_IO_DmaTxCpltCallback(DMA_HandleTypeDef *hdma)
 {
   UNUSED(hdma);
-}
-
-//-----------------------------------------------------------------------------
-/* Fill 24bit bitmap from 16bit color */
-void FillConvert16to24(uint16_t color, uint8_t * tg, uint32_t Size)
-{
-  uint32_t c24;
-  #if LCD_REVERSE16 == 0
-  c24 = RGB565TO888(color);
-  #elif LCD_REVERSE16 == 1
-  uint16_t c16 = __REVSH(color);
-  c24 = RGB565TO888(c16);
-  #endif
-  while(Size--)
-  {
-    *(uint32_t *)tg = c24;
-    tg += 3;
-  }
-}
-
-//-----------------------------------------------------------------------------
-/* Convert from 16bit bitmnap to 24bit bitmap */
-void BitmapConvert16to24(uint16_t * src, uint8_t * tg, uint32_t Size)
-{
-  while(Size--)
-  {
-    #if LCD_REVERSE16 == 0
-    *(uint32_t *)tg = RGB565TO888(*src);
-    #elif LCD_REVERSE16 == 1
-    uint16_t c16 = __REVSH(*src);
-    *(uint32_t *)tg = RGB565TO888(c16);
-    #endif
-    src++;
-    tg += 3;
-  }
 }
 
 //-----------------------------------------------------------------------------
@@ -220,28 +181,14 @@ void HAL_DMA_TxCpltCallback(DMA_HandleTypeDef *hdma)
 
       if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_8BIT))
         dmastatus.ptr += dmastatus.trsize;        /* 8bit multidata */
-      else if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_16BIT))
+      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_16BIT))
         dmastatus.ptr += dmastatus.trsize << 1;   /* 16bit multidata */
-      else if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT))
-        dmastatus.ptr += dmastatus.trsize << 1;   /* 16 to 24bit multidata */
 
       dmastatus.size -= dmastatus.trsize;
       if(dmastatus.size <= dmastatus.maxtrsize)
         dmastatus.trsize = dmastatus.size;
 
-      #if LCD_RGB24_BUFFSIZE == 0
       HAL_DMA_Start_IT(&LCD_DMA_HANDLE, dmastatus.ptr, LCD_ADDR_DATA, dmastatus.trsize);
-      #else /* #if LCD_RGB24_BUFFSIZE == 0 */
-      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT))
-      {
-        BitmapConvert16to24((uint16_t *)dmastatus.ptr, lcd_rgb24_dma_buffer, dmastatus.trsize);
-        HAL_DMA_Start_IT(&LCD_DMA_HANDLE, (uint32_t)&lcd_rgb24_dma_buffer, LCD_ADDR_DATA, dmastatus.trsize * 3);
-      }
-      else if(dmastatus.status == (DMA_STATUS_FILL | DMA_STATUS_24BIT))
-        HAL_DMA_Start_IT(&LCD_DMA_HANDLE, (uint32_t)&lcd_rgb24_dma_buffer, LCD_ADDR_DATA, dmastatus.trsize * 3);
-      else
-        HAL_DMA_Start_IT(&LCD_DMA_HANDLE, dmastatus.ptr, LCD_ADDR_DATA, dmastatus.trsize);
-      #endif /* #if LCD_RGB24_BUFFSIZE == 0 */
     }
     else
     { /* dma operations have ended */
@@ -262,11 +209,7 @@ void LCDWriteFillMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
 {
   #if LCD_DMA_TX == 1
 
-  #if LCD_REVERSE16 == 0
-  if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)) && (Mode & (LCD_IO_FILL | LCD_IO_DATA8 | LCD_IO_DATA16TO24)))
-  #elif LCD_REVERSE16 == 1
   if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)))
-  #endif
   { /* DMA mode */
 
     if(Mode & LCD_IO_DATA8)
@@ -292,14 +235,7 @@ void LCDWriteFillMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
 
       if(Mode & LCD_IO_DATA16)
       {
-        #if LCD_REVERSE16 == 0
-        dmastatus.data = __REVSH(*(uint16_t *)pData);
-        #elif LCD_REVERSE16 == 1
-        if(Mode & LCD_IO_REVERSE16)
-          dmastatus.data = *(uint16_t *)pData;
-        else
-          dmastatus.data = __REVSH(*(uint16_t *)pData);
-        #endif
+        dmastatus.data = *(uint16_t *)pData;
       }
       else
         dmastatus.data = *pData;
@@ -340,14 +276,7 @@ void LCDWriteFillMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
       }
       else if(Mode & LCD_IO_DATA16)
       { /* fill 16bit */
-        #if LCD_REVERSE16 == 0
-        c16 = __REVSH(*pD16);
-        #elif LCD_REVERSE16 == 1
-        if(Mode & LCD_IO_REVERSE16)
-          c16 = *pD16;
-        else
-          c16 = __REVSH(*pD16);
-        #endif
+        c16 = *pD16;
         {
           while(Size--)
             *(volatile uint16_t *)LCD_ADDR_DATA = c16;
@@ -366,23 +295,10 @@ void LCDWriteFillMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
       }
       else
       { /* multidata 16bit */
-        #if LCD_REVERSE16 == 1
-        if(Mode & LCD_IO_REVERSE16)
+        while(Size--)
         {
-          while(Size--)
-          {
-            *(volatile uint16_t *)LCD_ADDR_DATA = *pD16;
-            pD16++;
-          }
-        }
-        else
-        #endif
-        {
-          while(Size--)
-          {
-            *(volatile uint16_t *)LCD_ADDR_DATA = __REVSH(*pD16);
-            pD16++;
-          }
+          *(volatile uint16_t *)LCD_ADDR_DATA = *pD16;
+          pD16++;
         }
       }
     }
@@ -400,81 +316,74 @@ void LCDWriteFillMultiData16to24(uint16_t * pData, uint32_t Size, uint32_t Mode)
   union
   {
     uint8_t  c8[4];
+    uint16_t c16[2];
     uint32_t c24;
   }rgb888;
-  #if LCD_REVERSE16 == 1
-  uint16_t c16;
-  #endif
 
-  #if LCD_DMA_TX == 1 && LCD_RGB24_BUFFSIZE > 0
-  if(Size > DMA_MINSIZE)
-  { /* DMA mode */
-    dmastatus.maxtrsize = LCD_RGB24_BUFFSIZE;
-    dmastatus.size = Size;
+  #if LCD_RGB24_MODE == 0
+  uint8_t ccnt = 0, ctmp = 0; /* color counter  (even and odd pixels), color temp */
 
-    if(Size > LCD_RGB24_BUFFSIZE)
-      dmastatus.trsize = LCD_RGB24_BUFFSIZE;
-    else
-      dmastatus.trsize = Size;
-
-    if(Mode & LCD_IO_FILL)
+  if(Mode & LCD_IO_FILL)
+  { /* fill 16bit to 24bit */
+    rgb888.c24 = RGB565TO888(*pData);
+    while(Size--)
     {
-      dmastatus.status = DMA_STATUS_FILL | DMA_STATUS_24BIT;
-      FillConvert16to24(*(uint16_t *)pData, lcd_rgb24_dma_buffer, dmastatus.trsize);
+      if(!ccnt)
+      {
+        ccnt = 1;
+        *(volatile uint16_t *)LCD_ADDR_DATA = (rgb888.c8[2] << 8) | rgb888.c8[1];
+        *(volatile uint16_t *)LCD_ADDR_DATA = (rgb888.c8[0] << 8) | rgb888.c8[2];
+      }
+      else
+      {
+        ccnt = 0;
+        *(volatile uint16_t *)LCD_ADDR_DATA = (rgb888.c8[1] << 8) | rgb888.c8[0];
+      }
     }
-    else
-    {
-      dmastatus.status = DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT;
-      dmastatus.ptr = (uint32_t)pData;
-      BitmapConvert16to24((uint16_t *)pData, lcd_rgb24_dma_buffer, dmastatus.trsize);
-    }
-
-    LCD_DMA_HANDLE.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    LCD_DMA_HANDLE.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    LCD_DMA_HANDLE.Init.PeriphInc = DMA_PINC_ENABLE;
-    LCD_DMA_HANDLE.Init.MemInc = DMA_MINC_DISABLE;
-    LCD_DMA_HANDLE.XferCpltCallback = &HAL_DMA_TxCpltCallback;
-    HAL_DMA_Init(&LCD_DMA_HANDLE);
-    HAL_DMA_Start_IT(&LCD_DMA_HANDLE,  (uint32_t)&lcd_rgb24_dma_buffer, LCD_ADDR_DATA, dmastatus.trsize * 3);
-
-    LcdDmaWaitEnd(m & LCD_IO_FILL);
   }
   else
-  #endif
-  { /* not DMA mode */
-    if(Mode & LCD_IO_FILL)
-    { /* fill 16bit to 24bit */
-      #if LCD_REVERSE16 == 0
+  { /* multidata 16bit to 24bit */
+    while(Size--)
+    {
       rgb888.c24 = RGB565TO888(*pData);
-      #elif LCD_REVERSE16 == 1
-      c16 = __REVSH(*pData);
-      rgb888.c24 = RGB565TO888(c16);
-      #endif
-      while(Size--)
+      pData++;
+      if(!ccnt)
       {
-        *(volatile uint8_t *)LCD_ADDR_DATA = rgb888.c8[0];
-        *(volatile uint8_t *)LCD_ADDR_DATA = rgb888.c8[1];
-        *(volatile uint8_t *)LCD_ADDR_DATA = rgb888.c8[2];
+        ccnt = 1;
+        *(volatile uint16_t *)LCD_ADDR_DATA = (rgb888.c8[2] << 8) | rgb888.c8[1];
+        ctmp = rgb888.c8[0];
+      }
+      else
+      {
+        ccnt = 0;
+        *(volatile uint16_t *)LCD_ADDR_DATA = (ctmp << 8) | rgb888.c8[2];
+        *(volatile uint16_t *)LCD_ADDR_DATA = rgb888.c16[0];
       }
     }
-    else
-    { /* multidata 16bit to 24bit */
-      while(Size--)
-      {
-        #if LCD_REVERSE16 == 0
-        rgb888.c24 = RGB565TO888(*pData);
-        #elif LCD_REVERSE16 == 1
-        c16 = __REVSH(*pData);
-        rgb888.c24 = RGB565TO888(c16);
-        #endif
-        *(volatile uint8_t *)LCD_ADDR_DATA = rgb888.c8[0];
-        *(volatile uint8_t *)LCD_ADDR_DATA = rgb888.c8[1];
-        *(volatile uint8_t *)LCD_ADDR_DATA = rgb888.c8[2];
-        pData++;
-      }
-    }
-    LcdTransEnd();
+    if(!ccnt)
+      *(volatile uint16_t *)LCD_ADDR_DATA = ctmp << 8;
   }
+
+  #elif LCD_RGB24_MODE == 1
+  if(Mode & LCD_IO_FILL)
+  { /* fill 16bit to 24bit */
+    rgb888.c24 = RGB565TO888(*pData);
+    while(Size--)
+    {
+      *(volatile uint16_t *)LCD_ADDR_DATA = rgb888.c16[0];
+      *(volatile uint16_t *)LCD_ADDR_DATA = rgb888.c16[1];
+    }
+  }
+  else
+  { /* multidata 16bit to 24bit */
+    while(Size--)
+    {
+      rgb888.c24 = RGB565TO888(*pData++);
+      *(volatile uint16_t *)LCD_ADDR_DATA = rgb888.c16[0];
+      *(volatile uint16_t *)LCD_ADDR_DATA = rgb888.c16[1];
+    }
+  }
+  #endif
 }
 
 //=============================================================================
@@ -493,37 +402,11 @@ __weak void LCD_IO_DmaRxCpltCallback(DMA_HandleTypeDef *hdma)
 }
 
 //-----------------------------------------------------------------------------
-/* Convert from 16bit bitmnap to 24bit bitmap */
-void BitmapConvert24to16(uint8_t * src, uint16_t * tg, uint32_t Size)
-{
-  uint32_t c24;
-  while(Size--)
-  {
-    c24 = *(uint32_t *)src;
-    #if LCD_REVERSE16 == 0
-    *tg = RGB888TO565(c24);
-    #elif LCD_REVERSE16 == 1
-    *tg = __REVSH(RGB888TO565(c24));
-    #endif
-    src += 3;
-    tg++;
-  }
-}
-
-//-----------------------------------------------------------------------------
 /* SPI DMA operation interrupt */
 void HAL_DMA_RxCpltCallback(DMA_HandleTypeDef *hdma)
 {
   if(hdma == &LCD_DMA_HANDLE)
   {
-    #if LCD_RGB24_BUFFSIZE > 0
-    if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT))
-    {
-      BitmapConvert24to16(lcd_rgb24_dma_buffer, (uint16_t *)dmastatus.ptr, dmastatus.trsize);
-      dmastatus.ptr += dmastatus.trsize << 1; /* 24bit multidata */
-    }
-    else
-    #endif /* LCD_RGB24_BUFFSIZE > 0 */
     {
       if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_8BIT))
         dmastatus.ptr += dmastatus.trsize;        /* 8bit multidata */
@@ -537,11 +420,6 @@ void HAL_DMA_RxCpltCallback(DMA_HandleTypeDef *hdma)
       if(dmastatus.size <= dmastatus.maxtrsize)
         dmastatus.trsize = dmastatus.size;
 
-      #if LCD_RGB24_BUFFSIZE > 0
-      if(dmastatus.status == (DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT))
-        HAL_DMA_Start_IT(&LCD_DMA_HANDLE, LCD_ADDR_DATA, (uint32_t)&lcd_rgb24_dma_buffer, dmastatus.trsize * 3);
-      else
-      #endif /* #if LCD_RGB24_BUFFSIZE > 0 */
       HAL_DMA_Start_IT(&LCD_DMA_HANDLE, LCD_ADDR_DATA, dmastatus.ptr, dmastatus.trsize);
     }
     else
@@ -560,12 +438,9 @@ void HAL_DMA_RxCpltCallback(DMA_HandleTypeDef *hdma)
    - bitdepth: 0 = 8bit data, 1 = 16bit data */
 void LCDReadMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
 {
+  //uint32_t m = Mode;
   #if LCD_DMA_RX == 1
-  #if LCD_REVERSE16 == 0
-  if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)) && (Mode & LCD_IO_DATA8))
-  #elif LCD_REVERSE16 == 1
-  if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)) && (Mode & (LCD_IO_DATA8 | LCD_IO_REVERSE16)))
-  #endif
+  if((Size > DMA_MINSIZE) && (!LCD_DMA_UNABLE((uint32_t)pData)) && (Mode & LCD_IO_DATA16))
   { /* DMA mode */
     /* RX DMA setting (8bit, 16bit, multidata) */
     if(Mode & LCD_IO_DATA8)
@@ -612,21 +487,10 @@ void LCDReadMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
     else
     { /* 16bit */
       uint16_t * pD16 = (uint16_t *)pData;
-      #if LCD_REVERSE16 == 1
-      if(Mode & LCD_IO_REVERSE16)
       {
         while(Size--)
         {
           *pD16 = *(volatile uint16_t *)LCD_ADDR_DATA;
-          pD16++;
-        }
-      }
-      else
-      #endif
-      {
-        while(Size--)
-        {
-          *pD16 = __REVSH(*(volatile uint16_t *)LCD_ADDR_DATA);
           pD16++;
         }
       }
@@ -644,49 +508,41 @@ void LCDReadMultiData24to16(uint16_t * pData, uint32_t Size, uint32_t Mode)
   union
   {
     uint8_t  c8[4];
+    uint16_t c16[2];
     uint32_t c24;
   }rgb888;
 
-  #if LCD_DMA_RX == 1 && LCD_RGB24_BUFFSIZE > 0
-  if(Size > DMA_MINSIZE)
-  { /* DMA mode */
-    /* SPI RX DMA setting (8bit, multidata) */
-    LCD_DMA_HANDLE.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    LCD_DMA_HANDLE.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    LCD_DMA_HANDLE.Init.MemInc = DMA_MINC_ENABLE;
-
-    dmastatus.maxtrsize = LCD_RGB24_BUFFSIZE;
-    dmastatus.size = Size;
-
-    if(Size > LCD_RGB24_BUFFSIZE)
-      dmastatus.trsize = LCD_RGB24_BUFFSIZE;
-    else
-      dmastatus.trsize = Size;
-
-    dmastatus.status = DMA_STATUS_MULTIDATA | DMA_STATUS_24BIT;
-    dmastatus.ptr = (uint32_t)pData;
-    LCD_DMA_HANDLE.XferCpltCallback = &HAL_DMA_RxCpltCallback;
-    HAL_DMA_Init(&LCD_DMA_HANDLE);
-    HAL_DMA_Start_IT(&LCD_DMA_HANDLE, LCD_ADDR_DATA, (uint32_t)&lcd_rgb24_dma_buffer, dmastatus.trsize * 3);
-    LcdDmaWaitEnd(1);
-  }
-  else
-  #endif /* #if LCD_DMA_RX == 1 && LCD_RGB24_BUFFSIZE > 0 */
-  { /* not DMA mode */
-    while(Size--)
+  #if LCD_RGB24_MODE == 0
+  uint8_t ccnt = 0, ctmp = 0; /* color counter (even and odd pixels), color temp */
+  while(Size--)
+  {
+    if(!ccnt)
     {
-      rgb888.c8[0] = *(volatile uint8_t *)LCD_ADDR_DATA;
-      rgb888.c8[1] = *(volatile uint8_t *)LCD_ADDR_DATA;
-      rgb888.c8[2] = *(volatile uint8_t *)LCD_ADDR_DATA;
-      #if LCD_REVERSE16 == 0
-      *pData = RGB888TO565(rgb888.c24);
-      #elif LCD_REVERSE16 == 1
-      *pData = __REVSH(RGB888TO565(rgb888.c24));
-      #endif
-      pData++;
+      ccnt = 1;
+      rgb888.c16[1] = *(volatile uint16_t *)LCD_ADDR_DATA;
+      rgb888.c16[0] = *(volatile uint16_t *)LCD_ADDR_DATA;
+      ctmp = rgb888.c8[0];
+      rgb888.c24 >>= 8;
     }
-    LcdTransEnd();
+    else
+    {
+      ccnt = 0;
+      rgb888.c16[0] = *(volatile uint16_t *)LCD_ADDR_DATA;
+      rgb888.c8[2] = ctmp;
+    }
+    *pData = RGB888TO565(rgb888.c24);
+    pData++;
   }
+
+  #elif LCD_RGB24_MODE == 1
+  while(Size--)
+  {
+    rgb888.c16[0] = *(volatile uint16_t *)LCD_ADDR_DATA;
+    rgb888.c16[1] = *(volatile uint16_t *)LCD_ADDR_DATA;
+    *pData = RGB888TO565(rgb888.c24);
+    pData++;
+  }
+  #endif
 }
 
 #endif /* #if LCD_DATADIR == 1 */
@@ -758,7 +614,7 @@ void LCD_IO_Transaction(uint16_t Cmd, uint8_t *pData, uint32_t Size, uint32_t Du
   if(Mode & LCD_IO_CMD8)
     *(volatile uint8_t *)LCD_ADDR_BASE = Cmd;
   else if(Mode & LCD_IO_CMD16)
-    *(volatile uint16_t *)LCD_ADDR_BASE = __REVSH(Cmd);
+    *(volatile uint16_t *)LCD_ADDR_BASE = Cmd;
 
   if(Size == 0)
   { /* only command byte or word */
