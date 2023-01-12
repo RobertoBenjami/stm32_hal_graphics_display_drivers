@@ -132,8 +132,8 @@ TS_DrvTypeDef  *ts_drv = &xpt2046_ts_drv;
 //-----------------------------------------------------------------------------
 void xpt2046_ts_Init(uint16_t DeviceAddr)
 {
-  const uint8_t c = XPT2046_CMD_GETY;
   #if defined(TS_IRQ_GPIO_Port) && defined (TS_IRQ_Pin)
+  const uint8_t c = XPT2046_CMD_GETY;
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
   HAL_SPI_Transmit(&TS_SPI_HANDLE, (uint8_t *)&c, 1, TS_SPI_TIMEOUT);
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
