@@ -119,13 +119,14 @@ extern  SPI_HandleTypeDef     TS_SPI_HANDLE;
 //-----------------------------------------------------------------------------
 uint16_t TS_IO_Transaction(uint8_t cmd)
 {
+  const uint16_t td = 0;
   uint16_t ret;
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
   HAL_SPI_Transmit(&TS_SPI_HANDLE, (uint8_t *)&cmd, 1, TS_SPI_TIMEOUT);
   #if XPT2046_READDELAY > 0
   TS_IO_Delay(XPT2046_READDELAY);
   #endif
-  HAL_SPI_Receive(&TS_SPI_HANDLE, (uint8_t *)&ret, 2, TS_SPI_TIMEOUT);
+  HAL_SPI_TransmitReceive(&TS_SPI_HANDLE, (uint8_t *)&td, (uint8_t *)&ret, 2, TS_SPI_TIMEOUT);
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
   ret = __REVSH(ret);
   return ((ret & 0x7FFF) >> 3);
@@ -176,12 +177,6 @@ void xpt2046_ts_Init(uint16_t DeviceAddr)
   #if TS_SPI_HANDLE != -1 && defined(TS_SPI_SPD) && TS_SPI_SPD >= 0 && TS_SPI_SPD <= 7
   LCD_SPI_SETBAUDRATE(TS_SPI_HANDLE, TS_SPI_SPD);
   #endif
-  #if defined(TS_IRQ_GPIO_Port) && defined (TS_IRQ_Pin)
-  const uint8_t c = XPT2046_CMD_GETY;
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(&TS_SPI_HANDLE, (uint8_t *)&c, 1, TS_SPI_TIMEOUT);
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
-  #endif
 }
 
 //-----------------------------------------------------------------------------
@@ -217,12 +212,6 @@ uint8_t xpt2046_ts_DetectTouch(uint16_t DeviceAddr)
         y1 = y2;
       }
     }
-    #if defined(TS_IRQ_GPIO_Port) && defined (TS_IRQ_Pin)
-    HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
-    i = XPT2046_CMD_GETY;
-    HAL_SPI_Transmit(&TS_SPI_HANDLE, (uint8_t *)&i, 1, TS_SPI_TIMEOUT);
-    HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
-    #endif
   }
   return ret;
 }
