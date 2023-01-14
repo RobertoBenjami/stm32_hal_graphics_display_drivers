@@ -80,7 +80,10 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 	 - on my LCDs the touchscreen speed is lower than the lcd speed */
 #define LCD_SPI_SPD_WRITE     1
 #define LCD_SPI_SPD_READ      4
-#define TS_SPI_SPD            7
+#define TS_SPI_SPD            4
+
+/* Wait time before reading xpt2046 (see: TS_IO_Transaction and TS_IO_Delay dunctions) */
+#define XPT2046_READDELAY     0
 
 /* Backlight control (the logical level of the active state) */
 #define LCD_BLON              0

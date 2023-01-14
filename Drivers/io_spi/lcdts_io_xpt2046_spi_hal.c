@@ -978,10 +978,6 @@ void TS_IO_Delay(uint32_t c)
 #elif   defined(__CC_ARM)
 #pragma pop
 #endif
-//-----------------------------------------------------------------------------
-void TS_IO_Init(void)
-{
-}
 
 //-----------------------------------------------------------------------------
 uint16_t TS_IO_Transaction(uint8_t cmd)
@@ -1011,12 +1007,6 @@ uint16_t TS_IO_Transaction(uint8_t cmd)
 uint8_t TS_IO_DetectToch(void)
 {
   uint8_t  ret;
-  static uint8_t ts_inited = 0;
-  if(!ts_inited)
-  {
-    TS_IO_Init();
-    ts_inited = 1;
-  }
   #if defined(TS_IRQ_GPIO_Port) && defined (TS_IRQ_Pin)
   if(HAL_GPIO_ReadPin(TS_IRQ_GPIO_Port, TS_IRQ_Pin))
     ret = 0;
@@ -1051,12 +1041,6 @@ TS_DrvTypeDef  *ts_drv = &xpt2046_ts_drv;
 //-----------------------------------------------------------------------------
 void xpt2046_ts_Init(uint16_t DeviceAddr)
 {
-  const uint8_t c = XPT2046_CMD_GETY;
-  #if defined(TS_IRQ_GPIO_Port) && defined (TS_IRQ_Pin)
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(&LCDTS_SPI_HANDLE, (uint8_t *)&c, 1, LCDTS_SPI_TIMEOUT);
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
-  #endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1092,12 +1076,6 @@ uint8_t xpt2046_ts_DetectTouch(uint16_t DeviceAddr)
         y1 = y2;
       }
     }
-    #if defined(TS_IRQ_GPIO_Port) && defined (TS_IRQ_Pin)
-    HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
-    i = XPT2046_CMD_GETY;
-    HAL_SPI_Transmit(&LCDTS_SPI_HANDLE, (uint8_t *)&i, 1, LCDTS_SPI_TIMEOUT);
-    HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
-    #endif
   }
   return ret;
 }
