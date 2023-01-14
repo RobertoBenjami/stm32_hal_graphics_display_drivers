@@ -119,14 +119,14 @@ extern  SPI_HandleTypeDef     TS_SPI_HANDLE;
 //-----------------------------------------------------------------------------
 uint16_t TS_IO_Transaction(uint8_t cmd)
 {
-  const uint16_t td = 0;
+  const uint16_t d = 0;
   uint16_t ret;
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
   HAL_SPI_Transmit(&TS_SPI_HANDLE, (uint8_t *)&cmd, 1, TS_SPI_TIMEOUT);
   #if XPT2046_READDELAY > 0
   TS_IO_Delay(XPT2046_READDELAY);
   #endif
-  HAL_SPI_TransmitReceive(&TS_SPI_HANDLE, (uint8_t *)&td, (uint8_t *)&ret, 2, TS_SPI_TIMEOUT);
+  HAL_SPI_TransmitReceive(&TS_SPI_HANDLE, (uint8_t *)&d, (uint8_t *)&ret, 2, TS_SPI_TIMEOUT);
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
   ret = __REVSH(ret);
   return ((ret & 0x7FFF) >> 3);

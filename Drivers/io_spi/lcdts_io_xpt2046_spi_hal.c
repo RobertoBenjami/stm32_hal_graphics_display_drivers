@@ -986,6 +986,7 @@ void TS_IO_Init(void)
 //-----------------------------------------------------------------------------
 uint16_t TS_IO_Transaction(uint8_t cmd)
 {
+  const uint16_t d = 0;
   uint16_t ret;
   LcdTransStart();
   LCD_SPI_SETBAUDRATE(LCDTS_SPI_HANDLE, TS_SPI_SPD);           /* speed change */
@@ -995,7 +996,7 @@ uint16_t TS_IO_Transaction(uint8_t cmd)
   #if XPT2046_READDELAY > 0
   TS_IO_Delay(XPT2046_READDELAY);
   #endif
-  HAL_SPI_Receive(&LCDTS_SPI_HANDLE, (uint8_t *)&ret, 2, LCDTS_SPI_TIMEOUT);
+  HAL_SPI_TransmitReceive(&LCDTS_SPI_HANDLE, (uint8_t *)&d, (uint8_t *)&ret, 2, LCDTS_SPI_TIMEOUT);
   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
   ret = __REVSH(ret);
   LCD_SPI_SETBAUDRATE(LCDTS_SPI_HANDLE, LCD_SPI_SPD_WRITE);       /* speed change */
