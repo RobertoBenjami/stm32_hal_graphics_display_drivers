@@ -22,8 +22,10 @@
    - Frame format: Motorola
    - Data Size: 8 bits
    - First bit: MSB first
+   - Prescaler: it doesn't matter, the speed needs to be specified elsewhere
    - Clock Polarity: Low
    - Clock Phase: 1 Edge
+     note: if the selected SPI pin is not good, change it in the pinout view
    SPI DMA Settings (if necessary)
    - Add DMA Request SPIn_TX, left at the default value (if necessary)
    - Add DMA Request SPIn_RX, left at the default value (if necessary)

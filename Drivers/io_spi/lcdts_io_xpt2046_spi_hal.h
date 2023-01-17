@@ -23,6 +23,7 @@
    - Frame format: Motorola
    - Data Size: 8 bits
    - First bit: MSB first
+   - Prescaler: it doesn't matter, the speed needs to be specified elsewhere
    - Clock Polarity: Low
    - Clock Phase: 1 Edge
      note: if the selected SPI pin is not good, change it in the pinout view
@@ -78,6 +79,12 @@
      - Pull-up/Pull-down: No pull-up and no pull-down
      - Max output speed: Low
      - User Label: LCD_BL
+   - Touchscreen IRQ (only when connected)
+     - output level: n/a 
+     - mode: Input mode
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: n/a
+     - User Label: TS_IRQ
 
    Settings in main.h:
    - If you use freertos, add this line the main.h file
