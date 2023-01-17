@@ -32,13 +32,19 @@ Lower layer (only the necessary files are added)
 - io_fscm / lcd_io_fsmc16_hal.h, lcd_io_fsmc16_hal.c (16bit paralell lcd io driver in FSMC hardware)
 - io_i2c / ts_stmpe811qtr.h, ts_stmpe811qtr.c (i2c stmpe811 touchscreen driver)
 
+# Note
+
 I rewrote the graphics driver. I changed the old baremetal style to HAL. Why? Many new processor families have appeared recently, and managing the differences between each processor family in a bare-metal way has become too complicated. Using the HAL, the operation of a given i/o peripheral only needs to be done once, the deviations are done by the processor's own libraries for me. Deficiencies will also be filled in this way, because in the old days there are processor families where the selection is quite incomplete.
 
-# How It Works? Take the example program “appLcdSpeedTest.c” as an example.
-# “appLcdSpeedTest.c” uses the functions of the upper layer of the driver (stm32_adafruit_lcd.h / c). This layer contains many drawing functions (initialization, point, line, rectangle, circle, oval, some filled shapes, text, bitmap, image, point and image readback, etc.), if we need more, we can supplement it. This part of the driver is the same for all display types.
-"bmp.h" is required for the bitmap function, it contains the description of the bitmap header (letter drawing also uses the bitmap function).
-“lcd.h” is a port for upper and middle layer communication.
-The following things can be set in this layer:
+# How It Works? 
+
+Take the example program “appLcdSpeedTest.c” as an example.
+
+The “appLcdSpeedTest.c” uses the functions of the upper layer of the driver (stm32_adafruit_lcd.h / c). This layer contains many drawing functions (initialization, point, line, rectangle, circle, oval, some filled shapes, text, bitmap, image, point and image readback, etc.), if we need more, we can supplement it. This part of the driver is the same for all display types.
+- bmp.h is required for the bitmap function, it contains the description of the bitmap header (letter drawing also uses the bitmap function).
+- lcd.h is a port for upper and middle layer communication.
+
+The following things can be set in this layer
 stm32_adafruit_lcd.h:
 - default font size: LCD_DEFAULT_FONT
 - default background color: LCD_DEFAULT_BACKCOLOR
