@@ -81,3 +81,23 @@ ili9341.h (or other display.h):
 # Lower layer
 
 Carries out the delivery of the data required for initialization and drawing over a physical channel. The physical channel can be an SPI interface or a parallel interface. The parallel interface can use the GPIO pins “lcd_io_gpiox_hal.h / c”, or if the controller contains FSC/FSMC peripherals, we use the “lcd_io_fsmcx_hal.h / c” interface, because it is much faster.
+
+# Touchscreen
+
+The touchscreen driver has only 2 layers.
+
+# Upper layer
+
+- stm32_adafruit_ts.h, stm32_adafruit_ts.c, ts.h
+
+Setting in stm32_adafruit_ts.h:
+
+- TS_CINDEX values that are necessary to calculate the screen coordinate from the AD value of the touchscreen. It is possible to produce with the App TouchCalib or the App / Paint application.
+
+# Lower layer
+
+There are 4 types of touchscreen drivers
+- Analog resistive touchscreen with GPIO 8 bits (io_gpio / lcdts_io_gpio8_hal.h, lcdts_io_gpio8_hal.c)
+- Xpt2046 touchscreen driver on independent SPI channel (io_spi / ts_xpt2046.h, ts_xpt2046.c)
+- Xpt2046 touchscreen driver on shared SPI channel (io_spi / lcdts_io_xpt2046_spi_hal.h, lcdts_io_xpt2046_spi_hal.c)
+- Stmpe811 touchscreen driver on I2C channel (io_i2c / ts_stmpe811qtr.h, ts_stmpe811qtr.c)
