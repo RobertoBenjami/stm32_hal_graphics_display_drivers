@@ -65,7 +65,7 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 #define __LCDTS_IO_XPT2046_SPI_HAL_H__
 
 /* SPI handle select (see in main.c file, default: hspi1, hspi2 ... hspi6) */
-#define LCDTS_SPI_HANDLE      hspi2
+#define LCDTS_SPI_HANDLE      hspi1
 
 /* SPI mode
    - 0: only TX (write on MOSI pin, no MISO pin)

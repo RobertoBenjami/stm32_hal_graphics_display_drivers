@@ -4,10 +4,12 @@
 Set the peripherals and GPIO pins in cubemx according to the comments in the io driver header.
 
 # Which files should we add to the project?
+
 Upper layer:
 - stm32_adafruit_lcd.h, stm32_adafruit_lcd.c, lcd.h, bmp.h
 - Fonts folder
 - if used touchscreen: stm32_adafruit_ts.h, stm32_adafruit_ts.c, ts.h
+
 Middle layer (must be added to the project according to the type of LCD)
 - lcd / hx8347g.h, hx8347g.c (hx8347 lcd driver)
 - lcd / ili9325.h, ili9325.c (ili9325 lcd driver)
@@ -16,6 +18,7 @@ Middle layer (must be added to the project according to the type of LCD)
 - lcd / ili9488.h, ili9488.c (ili9488 lcd driver)
 - lcd / st7735.h, st7735.c (st7735 lcd driver)
 - lcd / st7781.h, st7781.c (st7781 lcd driver)
+
 Lower layer (only the necessary files are added)
 - lcd_io.h (this is always necessary)
 - io_spi / lcd_io_spi_hal.h, lcd_io_spi_hal.c (SPI lcd io driver)
@@ -40,16 +43,22 @@ stm32_adafruit_lcd.h:
 - default font size: LCD_DEFAULT_FONT
 - default background color: LCD_DEFAULT_BACKCOLOR
 - default drawing color: LCD_DEFAULT_TEXTCOLOR
+
 We can change these in the program at any time with the functions BSP_LCD_SetFont, BSP_LCD_SetBackColor, BSP_LCD_SetTextColor.
+
 lcd.h:
 - 16-bit color code byte sequence reversal: LCD_REVERSE16
+
 We only turn this on if we want to draw in DMA mode with the fsmc8 io interface (the DMA controller can only work in this way). If we turn it on, we must also store all color codes and bitmap data in reverse byte order in our program.
+
 The difference between bitmap and image drawing:
 - The bitmap is drawn from the bottom up, the bitmap data must contain the bitmap header.
 - The image draws from top to bottom and contains only the pointer containing the raw bit pattern. Therefore, the size of the image must also be specified.
 
 # The middle layer contains only a few drawing functions (initialization, cursor position setting, drawing window setting, point drawing, horizontal and vertical line drawing, bitmap drawing, image drawing and readback). The upper layer must map all the drawing functions to these few drawing functions. This layer depends on the type of display, because the drawing functions on each display can be solved with a different method, so we have to add the files of the display we use to the project (e.g. ili9341.h / c).
+
 The following things can be set in this layer:
+
 ili9341.h (or other display.h):
 - interface type (only for some types): INTERFACE
 - Rotation every 90 degrees: ORIENTATION

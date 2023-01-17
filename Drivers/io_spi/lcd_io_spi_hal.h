@@ -22,8 +22,8 @@
    - Frame format: Motorola
    - Data Size: 8 bits
    - First bit: MSB first
-   - Clock Polarity: High
-   - Clock Phase: 2 Edge
+   - Clock Polarity: Low
+   - Clock Phase: 1 Edge
    SPI DMA Settings (if necessary)
    - Add DMA Request SPIn_TX, left at the default value (if necessary)
    - Add DMA Request SPIn_RX, left at the default value (if necessary)
@@ -31,6 +31,8 @@
    - Lcd chip select name: LCD_CS
    - Lcd RS name: LCD_RS
    - Lcd SCK name: LCD_SCK
+   - Lcd MOSI name: LCD_MOSI (not necessary)
+   - Lcd MISO name: LCD_MISO (not necessary)
    - Lcd reset pin name: LCD_RST (only when connected)
    - Lcd black light pin name: LCD_BL (only when connected)
 
