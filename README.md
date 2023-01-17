@@ -40,6 +40,8 @@ I rewrote the graphics driver. I changed the old baremetal style to HAL. Why? Ma
 
 Take the example program “appLcdSpeedTest.c” as an example.
 
+# Upper layer
+
 The “appLcdSpeedTest.c” uses the functions of the upper layer of the driver (stm32_adafruit_lcd.h / c). This layer contains many drawing functions (initialization, point, line, rectangle, circle, oval, some filled shapes, text, bitmap, image, point and image readback, etc.), if we need more, we can supplement it. This part of the driver is the same for all display types.
 - bmp.h is required for the bitmap function, it contains the description of the bitmap header (letter drawing also uses the bitmap function).
 - lcd.h is a port for upper and middle layer communication.
@@ -61,7 +63,9 @@ The difference between bitmap and image drawing:
 - The bitmap is drawn from the bottom up, the bitmap data must contain the bitmap header.
 - The image draws from top to bottom and contains only the pointer containing the raw bit pattern. Therefore, the size of the image must also be specified.
 
-# The middle layer contains only a few drawing functions (initialization, cursor position setting, drawing window setting, point drawing, horizontal and vertical line drawing, bitmap drawing, image drawing and readback). The upper layer must map all the drawing functions to these few drawing functions. This layer depends on the type of display, because the drawing functions on each display can be solved with a different method, so we have to add the files of the display we use to the project (e.g. ili9341.h / c).
+# Middle layer
+
+This layer contains only a few drawing functions (initialization, cursor position setting, drawing window setting, point drawing, horizontal and vertical line drawing, bitmap drawing, image drawing and readback). The upper layer must map all the drawing functions to these few drawing functions. This layer depends on the type of display, because the drawing functions on each display can be solved with a different method, so we have to add the files of the display we use to the project (e.g. ili9341.h / c).
 
 The following things can be set in this layer:
 
@@ -74,4 +78,6 @@ ili9341.h (or other display.h):
 - color depth for reading: READBITDEPTH
 - do not change the screen size: LCD_PIXEL_WIDTH, LCD_PIXEL_HEIGHT
 
-# The lower layer carries out the delivery of the data required for initialization and drawing over a physical channel. The physical channel can be an SPI interface or a parallel interface. The parallel interface can use the GPIO pins “lcd_io_gpiox_hal.h / c”, or if the controller contains FSC/FSMC peripherals, we use the “lcd_io_fsmcx_hal.h / c” interface, because it is much faster.
+# Lower layer
+
+Carries out the delivery of the data required for initialization and drawing over a physical channel. The physical channel can be an SPI interface or a parallel interface. The parallel interface can use the GPIO pins “lcd_io_gpiox_hal.h / c”, or if the controller contains FSC/FSMC peripherals, we use the “lcd_io_fsmcx_hal.h / c” interface, because it is much faster.
