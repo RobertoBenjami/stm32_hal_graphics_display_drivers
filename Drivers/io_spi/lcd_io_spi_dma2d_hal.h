@@ -34,13 +34,48 @@
    - Add DMA Request SPIn_TX, left at the default value (if necessary)
    - Add DMA Request SPIn_RX, left at the default value (if necessary)
    GPIO
-   - Lcd chip select name: LCD_CS
-   - Lcd RS name: LCD_RS
-   - Lcd SCK name: LCD_SCK
-   - Lcd MOSI name: LCD_MOSI (not necessary)
-   - Lcd MISO name: LCD_MISO (not necessary)
-   - Lcd reset pin name: LCD_RST (only when connected)
-   - Lcd black light pin name: LCD_BL (only when connected)
+   - Lcd chip select: 
+     - output level: High 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_CS
+   - Lcd RS
+     - output level: Low 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_RS
+   - Lcd SCK
+     - output level: n/a 
+     - mode: Alternate Function Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_SCK
+   - Lcd MOSI
+     - output level: n/a 
+     - mode: Alternate Function Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_MOSI
+   - Lcd MISO
+     - output level: n/a 
+     - mode: Alternate Function Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_MISO
+   - Lcd reset pin (only when connected)
+     - output level: High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_RST
+   - Lcd back light pin (only when connected)
+     - output level: Low or High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_BL
    DMA2D
    - Transfer Mode: Memory to Memory With Pixel Format Conversion
    - Color Mode: RGB888

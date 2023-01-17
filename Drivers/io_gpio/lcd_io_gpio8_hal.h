@@ -3,6 +3,20 @@
  * 5 controll pins (CS, RS, WR, RD, RST) + 8 data pins + backlight pin (BL)
  */
 
+/* Settings in CUBEIDE or CUBEMX
+   GPIO
+   - Lcd chip select: LCD_CS
+   - Lcd RS name: LCD_RS
+   - Lcd reset pin name: LCD_RST (only when connected)
+   - Lcd black light pin name: LCD_BL (only when connected)
+
+   Settings in main.h:
+   - If you use freertos, add this line the main.h file
+     #include "cmsis_os.h"
+     (note: then the driver will also use the rtos signal to wait for the end of the dma transaction)
+*/
+
+
 #ifndef __LCD_IO_GPIO8_H
 #define __LCD_IO_GPIO8_H
 

@@ -30,14 +30,54 @@
    - Add DMA Request SPIn_TX, left at the default value (it's not neccessary)
    - Add DMA Request SPIn_RX, left at the default value (it's not neccessary)
    GPIO
-   - Lcd chip select pin: output level=high, mode=output push-pull, speed=very hight, user name=LCD_CS
-   - Touchscreen chip select pin: output level=high, mode=output push-pull, speed=very hight, user name=TS_CS
-   - Lcd RS pin: output level=low, mode=output push-pull, speed=very hight, user name=LCD_RS
-   - Lcd and touchscreen SCK pin: mode=alternate push-pull, speed=very hight, user name=LCDTS_SCK
-   - Lcd and touchscreen MOSI pin: mode=alternate push-pull, speed=very hight, user name=LCDTS_MOSI
-   - Lcd and touchscreen MISO pin: mode=alternate push-pull, speed=very hight, user name=LCDTS_MISO
-   - Lcd reset pin: output level=low, mode=output push-pull, speed=low, user name=LCD_RST (only when connected)
-   - Lcd black light pin: output level=low, mode=output push-pull, speed=low, user name=LCD_BL (only when connected)
+   - Lcd chip select: 
+     - output level: High 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_CS
+   - Touchscreen chip select:
+     - output level: High 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: TS_CS
+   - Lcd RS
+     - output level: Low 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_RS
+   - Lcd and Touchscreen SCK
+     - output level: n/a 
+     - mode: Alternate Function Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCDTS_SCK
+   - Lcd and Touchscreen MOSI
+     - output level: n/a 
+     - mode: Alternate Function Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCDTS_MOSI
+   - Lcd and Touchscreen MISO
+     - output level: n/a 
+     - mode: Alternate Function Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCDTS_MISO
+   - Lcd reset pin (only when connected)
+     - output level: High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_RST
+   - Lcd back light pin (only when connected)
+     - output level: Low or High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_BL
 
    Settings in main.h:
    - If you use freertos, add this line the main.h file
