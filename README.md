@@ -98,7 +98,6 @@ Setting in stm32_adafruit_ts.h:
 
 There are 4 types of touchscreen drivers
 - Analog resistive touchscreen with GPIO 8 bits (io_gpio / lcdts_io_gpio8_hal.h, lcdts_io_gpio8_hal.c)
-- Xpt2046 touchscreen driver on independent SPI channel (io_spi / ts_xpt2046.h, ts_xpt2046.c) 
-This driver can also work with software SPI, so you can connect it to any pin and you don't need an SPI peripheral.
+- Xpt2046 touchscreen driver on independent SPI channel (io_spi / ts_xpt2046.h, ts_xpt2046.c). This driver can also work with software SPI, so you can connect it to any pin and you don't need an SPI peripheral.
 - Xpt2046 touchscreen driver on shared SPI channel (io_spi / lcdts_io_xpt2046_spi_hal.h, lcdts_io_xpt2046_spi_hal.c)
 - Stmpe811 touchscreen driver on I2C channel (io_i2c / ts_stmpe811qtr.h, ts_stmpe811qtr.c)
