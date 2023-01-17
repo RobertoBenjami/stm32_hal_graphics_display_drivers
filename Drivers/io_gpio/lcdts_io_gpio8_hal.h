@@ -1,7 +1,69 @@
+//=============================================================================
+/* Information section */
+
 /*
  * 8 bit paralell LCD GPIO driver for all stm32 family
  * 5 controll pins (CS, RS, WR, RD, RST) + 8 data pins + backlight pin (BL)
  */
+
+/* Settings in CUBEIDE or CUBEMX
+   ADC
+   - select the ADC1 or ADC2 or ADC3
+   - select the Temperature Sensor Channel
+   - search the ADC channels for LCD_RS pin and LCD_WR pin (let's note it)
+     if these needles are not AD capable:
+     - connect these pin(s) with other AD capable pin(s)
+     - search the ADC channels this pin(s) (let's note it)
+     - select this AD channel(s)
+   GPIO
+   - Lcd chip select: 
+     - output level: High 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_CS
+   - Lcd RS
+     - output level: Low 
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_RS
+   - Lcd WR
+     - output level: High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_WR
+   - Lcd RD (only when connected)
+     - output level: High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_RD
+   - Lcd D0...D7 (8 data bits)
+     - output level: Low
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Very High
+     - User Label: LCD_D0 ... LCD_D7
+   - Lcd reset pin (only when connected)
+     - output level: High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_RST
+   - Lcd back light pin (only when connected)
+     - output level: Low or High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_BL
+
+   Settings in main.h:
+   - If you use freertos, add this line the main.h file
+     #include "cmsis_os.h"
+     (note: then the driver will also use the rtos signal to wait for the end of the dma transaction)
+*/
 
 #ifndef __LCD_IO_GPIO8_H
 #define __LCD_IO_GPIO8_H

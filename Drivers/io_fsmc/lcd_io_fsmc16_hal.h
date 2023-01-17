@@ -1,3 +1,6 @@
+//=============================================================================
+/* Information section */
+
 /*
  * 16 bit paralell LCD FSMC driver
  * 5 controll pins (CS, RS, WR, RD, RST) + 16 data pins + backlight pin
@@ -7,6 +10,36 @@
  * FSMC_D8<-LCD_D8, FSMC_D9<-LCD_D9, FSMC_D10<-LCD_D10, FSMC_D11<-LCD_D11
  * FSMC_D12<-LCD_D12, FSMC_D13<-LCD_D13, FSMC_D14<-LCD_D14, FSMC_D15<-LCD_D15
  */
+
+/* Settings in CUBEIDE or CUBEMX
+   FMC / FSMC
+   - select the bank
+   - select Chip Select
+   - select Memory type: LCD Interface
+   - select LCD Register Select: which pin we connected to the LCD RS pin
+   - select Data: 16 bits
+   - NOR/PSRAM Write operation: Enabled
+   - NOR/PSRAM Extended mode: Disabled
+   - NOR/PSRAM timings: first give a higher value, later if it works well, reduce it until it works well
+   GPIO
+   - Lcd reset pin (only when connected)
+     - output level: High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_RST
+   - Lcd back light pin (only when connected)
+     - output level: Low or High
+     - mode: Output Push Pull
+     - Pull-up/Pull-down: No pull-up and no pull-down
+     - Max output speed: Low
+     - User Label: LCD_BL
+
+   Settings in main.h:
+   - If you use freertos, add this line the main.h file
+     #include "cmsis_os.h"
+     (note: then the driver will also use the rtos signal to wait for the end of the dma transaction)
+*/
 
 #ifndef __LCD_IO_FSMC16_H
 #define __LCD_IO_FSMC16_H
