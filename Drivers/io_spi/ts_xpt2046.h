@@ -75,11 +75,6 @@
      - Pull-up/Pull-down: No pull-up and no pull-down
      - Max output speed: n/a
      - User Label: TS_IRQ
-
-   Settings in main.h:
-   - If you use freertos, add this line the main.h file
-     #include "cmsis_os.h"
-     (note: then the driver will also use the rtos signal to wait for the end of the dma transaction)
 */
 
 //=============================================================================

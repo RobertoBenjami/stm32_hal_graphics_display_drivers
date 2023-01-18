@@ -1,9 +1,19 @@
+//=============================================================================
+/* Information section */
+
 /*
  * STMPE811 HAL I2C touch driver
  * author: Roberto Benjami
  * v.2023.01
  *
  */
+
+/* Settings in CUBEIDE or CUBEMX
+
+ I2C
+ - I2C Speed: Standard Mode
+ - All other settings should remain default
+*/
 
 //=============================================================================
 /* Setting section (please set the necessary things in this section) */
