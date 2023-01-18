@@ -14,8 +14,12 @@
 /* Touchscreen calibrate at starting
    - 0: off (for the touchscreen, use the TS_CINDEX values in stm32_adafruit_ts.h)
    - 1: on  (the touchscreen must be calibrated at startup)
-   - 2: on and printf (the touchscreen must be calibrated at startup and printf the cindex values) */
-#define TS_CALBIBRATE         1
+   - 2: on and printf (the touchscreen must be calibrated at startup and printf the cindex values)
+   - 3: on and displays the TS_CINDEX values on the screen */
+#define TS_CALBIBRATE         0
+
+/* If TS_CALBIBRATE == 3 -> Text line size */
+#define TS_CALIBTEXTSIZE      12
 
 //=============================================================================
 #ifdef  osCMSIS
@@ -54,6 +58,9 @@ void ts_calib(void)
   ts_three_points tc, dc; /* touchscreen and display corrdinates */
   #if TS_CALBIBRATE == 2
   ts_cindex ci;
+  #elif TS_CALBIBRATE == 3
+  ts_cindex ci;
+  static char s[16];
   #endif
 
   dc.x0 = 20;
@@ -99,8 +106,21 @@ void ts_calib(void)
   BSP_TS_CalibCalc(&tc, &dc, &ci);
   BSP_TS_SetCindex(&ci);
   printf("\r\n#define  TS_CINDEX            {%d, %d, %d, %d, %d, %d, %d}\r\n", (int)ci[0], (int)ci[1], (int)ci[2], (int)ci[3], (int)ci[4], (int)ci[5], (int)ci[6]);
+  #elif TS_CALBIBRATE == 3
+  BSP_TS_CalibCalc(&tc, &dc, &ci);
+  BSP_TS_SetCindex(&ci);
+  BSP_LCD_DisplayStringAt(10, 10, (uint8_t *)"#define TS_CINDEX", LEFT_MODE);
+  for(uint32_t i=0; i<7; i++)
+  {
+    sprintf(s, "%d", (int)ci[i]);
+    BSP_LCD_DisplayStringAt(10, i*10+20, (uint8_t *)s, LEFT_MODE);
+  }
+  Delay(CALIBDELAY);
+  while(!ts_drv->DetectTouch(0))
+    Delay(TOUCHDELAY);
+  while(ts_drv->DetectTouch(0))
+    Delay(TOUCHDELAY);
   #endif
-
   Delay(CALIBDELAY);
   BSP_LCD_Clear(LCD_COLOR_BLACK);
 }
