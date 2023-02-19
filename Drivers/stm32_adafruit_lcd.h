@@ -61,25 +61,32 @@
 /* Config section (you can change this defines) */
 
 /* LCD default font (Font8 or Font12 or Font16 or Font20 or Font24) */
-#define LCD_DEFAULT_FONT         Font8
+#define LCD_DEFAULT_FONT      Font12
+
+/* Max font size */
+#define MAX_WIDTH_FONT        24
+#define MAX_HEIGHT_FONT       16
+
+/* BSP_LCD_DisplayMultilayerChar max layer */
+#define MAX_CHAR_LAYER        8
 
 /* LCD default colors */
-#define LCD_DEFAULT_BACKCOLOR    LCD_COLOR_BLACK
-#define LCD_DEFAULT_TEXTCOLOR    LCD_COLOR_WHITE
+#define LCD_DEFAULT_BACKCOLOR LCD_COLOR_BLACK
+#define LCD_DEFAULT_TEXTCOLOR LCD_COLOR_WHITE
 
 /* LCD clear with LCD_DEFAULT_BACKCOLOR in the BSP_LCD_Init (0:diasble, 1:enable) */
-#define LCD_INIT_CLEAR           0
+#define LCD_INIT_CLEAR        0
 
 /* some colors */
-#define LCD_COLOR_BLACK         LCD_COLOR(0, 0, 0)
-#define LCD_COLOR_GRAY          LCD_COLOR(192, 192, 192)
-#define LCD_COLOR_BLUE          LCD_COLOR(0, 0, 255)
-#define LCD_COLOR_RED           LCD_COLOR(255, 0, 0)
-#define LCD_COLOR_GREEN         LCD_COLOR(0, 255, 0)
-#define LCD_COLOR_CYAN          LCD_COLOR(0, 255, 255)
-#define LCD_COLOR_MAGENTA       LCD_COLOR(255, 0, 255)
-#define LCD_COLOR_YELLOW        LCD_COLOR(255, 255, 0)
-#define LCD_COLOR_WHITE         LCD_COLOR(255, 255, 255)
+#define LCD_COLOR_BLACK       LCD_COLOR(0, 0, 0)
+#define LCD_COLOR_GRAY        LCD_COLOR(192, 192, 192)
+#define LCD_COLOR_BLUE        LCD_COLOR(0, 0, 255)
+#define LCD_COLOR_RED         LCD_COLOR(255, 0, 0)
+#define LCD_COLOR_GREEN       LCD_COLOR(0, 255, 0)
+#define LCD_COLOR_CYAN        LCD_COLOR(0, 255, 255)
+#define LCD_COLOR_MAGENTA     LCD_COLOR(255, 0, 255)
+#define LCD_COLOR_YELLOW      LCD_COLOR(255, 255, 0)
+#define LCD_COLOR_WHITE       LCD_COLOR(255, 255, 255)
   
 //-----------------------------------------------------------------------------
 /* Interface section (no modify) */   
@@ -153,6 +160,7 @@ void     BSP_LCD_ClearStringLine(uint16_t Line);
 void     BSP_LCD_DisplayStringAtLine(uint16_t Line, uint8_t *ptr);
 void     BSP_LCD_DisplayStringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Line_ModeTypdef Mode);
 void     BSP_LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii);
+void     BSP_LCD_DisplayMultilayerChar(uint16_t Xpos, uint16_t Ypos, uint8_t *Chars, uint16_t *Colors, sFONT *sf);
 
 void     BSP_LCD_DrawPixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGB_Code);
 void     BSP_LCD_DrawHLine(uint16_t Xpos, uint16_t Ypos, uint16_t Length);

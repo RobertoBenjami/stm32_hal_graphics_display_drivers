@@ -1,6 +1,6 @@
 /*
  * Modify: Roberto Benjami
- * date: 2019.11
+ * date: 2023.02
  *
  * - BSP_LCD_DrawCircle : delete the BSP_LCD_SetFont(&LCD_DEFAULT_FONT); (interesting bug)
  * - BSP_LCD_Init : DrawProp.pFont = &Font24 change to DrawProp.pFont = &LCD_DEFAULT_FONT
@@ -12,7 +12,8 @@
  * - Add : BSP_LCD_FillTriangle (faster algorithm)
  * - Modify : BSP_LCD_Init (default font from header file, default colors from header file, otptional clear from header file)
  * - Modify : ReadID return type: uint16_t to uint32_t
- *
+ * - Modify : DrawChar function character size limit removed, and smaller bitmap array is sufficient for operation
+ * - Add : BSP_LCD_DisplayMultilayerChar function (mainly for drawing icons and buttons)
  * */
 
 /**
@@ -94,8 +95,6 @@ EndDependencies */
 #define POLY_Y(Z)             ((int32_t)((Points + (Z))->Y))
 #define NULL                  (void *)0
 
-#define MAX_HEIGHT_FONT       17
-#define MAX_WIDTH_FONT        24
 #define OFFSET_BITMAP         54
 
 /* @defgroup STM32_ADAFRUIT_LCD_Private_Macros */
@@ -264,6 +263,78 @@ void BSP_LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
 {
   DrawChar(Xpos, Ypos, &DrawProp.pFont->table[(Ascii-' ') *\
                         DrawProp.pFont->Height * ((DrawProp.pFont->Width + 7) / 8)]);
+}
+
+/**
+  * @brief  Displays one multilayer character.
+  * @param  Xpos: Start column address
+  * @param  Ypos: Line where to display the character shape.
+  * @param  Chars: Characters ascii code
+  *           This parameter must be a number between Min_Data = 0x20 and Max_Data = 0x7E
+  * @param  Colors: Character layer colors
+  * @param  sf: Font table address
+  * @retval None
+  */
+void BSP_LCD_DisplayMultilayerChar(uint16_t Xpos, uint16_t Ypos, uint8_t *Chars, uint16_t *Colors, sFONT *sf)
+{
+  uint32_t x, y, ay = 0;                /* actual coordinatas */
+  uint8_t *pcs[MAX_CHAR_LAYER];         /* character set pointers for layers */
+  uint8_t *pc;                          /* actual character set pointer */
+  uint32_t li = 0;                      /* layer index */
+  uint32_t csi = 0;                     /* character set byte array index */
+  uint16_t *pb;                         /* bitmap pointer */
+  uint32_t bmsy;                        /* bitmap buffer y size */
+  uint8_t  cbm;                         /* character set bitmap mask */
+
+  bmsy = (sizeof(bitmap) >> 1) / sf->Width;
+  if(!bmsy)
+    return;
+
+  while(Chars[li] >= ' ' && li < 8)
+  {
+    pcs[li] = (uint8_t *)&sf->table[(Chars[li]-' ') * sf->Height * ((sf->Width + 7) / 8)];
+    li++;
+  }
+
+  cbm = 0x80;
+  pb = (uint16_t *)bitmap;
+
+  for(y = 0; y < sf->Height; y++)
+  {
+    for(x = 0; x < sf->Width; x++)
+    {
+      if(!cbm)
+      { /* charcter set byte step */
+        cbm = 0x80;
+        csi++;
+      }
+
+      *pb = DrawProp.BackColor;
+      li = 0;
+      while(Chars[li] >= ' ' && li < 8)
+      {
+        pc = pcs[li];
+        if(pc[csi] & cbm)
+          *pb = Colors[li];
+        li++;
+      }
+      pb++;
+      cbm >>= 1;
+    }
+    cbm = 0;
+    ay++;
+    if(ay >= bmsy - 1)
+    {
+      BSP_LCD_DrawRGB16Image(Xpos, Ypos + y + 1 - ay, sf->Width, ay, (uint16_t *)bitmap);
+      ay = 0;
+      pb = (uint16_t *)bitmap;
+    }
+  }
+  if(ay)
+  {
+    BSP_LCD_DrawRGB16Image(Xpos, Ypos + y - ay, sf->Width, ay, (uint16_t *)bitmap);
+  }
+
 }
 
 /**
@@ -792,51 +863,51 @@ void BSP_LCD_DisplayOff(void)
   */
 static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
 {
-  uint32_t counterh = 0, counterw = 0, index = 0;
-  uint16_t height = 0, width = 0;
-  uint8_t offset = 0;
-  uint8_t *pchar = NULL;
-  uint32_t line = 0;
-  
-  height = DrawProp.pFont->Height;
-  width  = DrawProp.pFont->Width;
-  
-  /* Fill bitmap header*/
-  *(uint16_t *) (bitmap + 2) = (uint16_t)(height*width*2+OFFSET_BITMAP);
-  *(uint16_t *) (bitmap + 4) = (uint16_t)((height*width*2+OFFSET_BITMAP)>>16);
-  *(uint16_t *) (bitmap + 10) = OFFSET_BITMAP;
-  *(uint16_t *) (bitmap + 18) = (uint16_t)(width);
-  *(uint16_t *) (bitmap + 20) = (uint16_t)((width)>>16);
-  *(uint16_t *) (bitmap + 22) = (uint16_t)(height);
-  *(uint16_t *) (bitmap + 24) = (uint16_t)((height)>>16);
-  
-  offset =  8 *((width + 7)/8) - width ;
-  
-  for(counterh = 0; counterh < height; counterh++)
+  uint32_t x, y, ay = 0;
+  uint16_t *pb;                         /* bitmap pointer */
+  uint32_t bmsy;                        /* bitmap buffer y size */
+  uint8_t  c;                           /* character set actual byte */
+  uint8_t  cbm;                         /* character set bitmap mask */
+
+  bmsy = (sizeof(bitmap) >> 1) / DrawProp.pFont->Width;
+  if(!bmsy)
+    return;
+
+  cbm = 0x80;
+  pb = (uint16_t *)bitmap;
+  c = *pChar;
+
+  for(y = 0; y < DrawProp.pFont->Height; y++)
   {
-    pchar = ((uint8_t *)pChar + (width + 7)/8 * counterh);
-    
-    if(((width + 7)/8) == 3)
-      line =  (pchar[0]<< 16) | (pchar[1]<< 8) | pchar[2];
-    
-    if(((width + 7)/8) == 2)
-      line =  (pchar[0]<< 8) | pchar[1];
-    
-    if(((width + 7)/8) == 1)
-      line =  pchar[0];
-    
-    for (counterw = 0; counterw < width; counterw++)
+    for(x = 0; x < DrawProp.pFont->Width; x++)
     {
-      /* Image in the bitmap is written from the bottom to the top */
-      /* Need to invert image in the bitmap */
-      index = (((height-counterh-1)*width)+(counterw))*2+OFFSET_BITMAP;
-      if(line & (1 << (width- counterw + offset- 1))) 
-        *(uint16_t *)(&bitmap[index]) = DrawProp.TextColor;
+      if(!cbm)
+      { /* byte step */
+        cbm = 0x80;
+        pChar++;
+        c = *pChar;
+      }
+
+      if(c & cbm)
+        *pb = DrawProp.TextColor;
       else
-        *(uint16_t *)(&bitmap[index]) = DrawProp.BackColor;
+        *pb = DrawProp.BackColor;
+      pb++;
+      cbm >>= 1;
+    }
+    cbm = 0;
+    ay++;
+    if(ay >= bmsy - 1)
+    {
+      BSP_LCD_DrawRGB16Image(Xpos, Ypos + y + 1 - ay, DrawProp.pFont->Width, ay, (uint16_t *)bitmap);
+      ay = 0;
+      pb = (uint16_t *)bitmap;
     }
   }
-  BSP_LCD_DrawBitmap(Xpos, Ypos, bitmap);
+  if(ay)
+  {
+    BSP_LCD_DrawRGB16Image(Xpos, Ypos + y - ay, DrawProp.pFont->Width, ay, (uint16_t *)bitmap);
+  }
 }
 
 /**
