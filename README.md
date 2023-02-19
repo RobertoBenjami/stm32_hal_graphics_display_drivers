@@ -1,9 +1,9 @@
 # STM32 graphics display drivers with HAL
 
-# What should be set first?
+## What should be set first?
 Set the peripherals and GPIO pins in cubemx according to the comments in the io driver header.
 
-# Which files should we add to the project?
+## Which files should we add to the project?
 
 Upper layer:
 - stm32_adafruit_lcd.h, stm32_adafruit_lcd.c, lcd.h, bmp.h
@@ -32,15 +32,15 @@ Lower layer (only the necessary files are added)
 - io_fscm / lcd_io_fsmc16_hal.h, lcd_io_fsmc16_hal.c (16bit paralell lcd io driver in FSMC hardware)
 - io_i2c / ts_stmpe811qtr.h, ts_stmpe811qtr.c (i2c stmpe811 touchscreen driver)
 
-# Note
+## Note
 
 I rewrote the graphics driver. I changed the old baremetal style to HAL. Why? Many new processor families have appeared recently, and managing the differences between each processor family in a bare-metal way has become too complicated. Using the HAL, the operation of a given i/o peripheral only needs to be done once, the deviations are done by the processor's own libraries for me. Deficiencies will also be filled in this way, because in the old days there are processor families where the selection is quite incomplete.
 
-# How It Works? 
+## How It Works? 
 
 Take the example program “appLcdSpeedTest.c” as an example.
 
-# Upper layer
+## Upper layer
 
 The “appLcdSpeedTest.c” uses the functions of the upper layer of the driver (stm32_adafruit_lcd.h / c). This layer contains many drawing functions (initialization, point, line, rectangle, circle, oval, some filled shapes, text, bitmap, image, point and image readback, etc.), if we need more, we can supplement it. This part of the driver is the same for all display types.
 - bmp.h is required for the bitmap function, it contains the description of the bitmap header (letter drawing also uses the bitmap function).
@@ -63,7 +63,7 @@ The difference between bitmap and image drawing:
 - The bitmap is drawn from the bottom up, the bitmap data must contain the bitmap header.
 - The image draws from top to bottom and contains only the pointer containing the raw bit pattern. Therefore, the size of the image must also be specified.
 
-# Middle layer
+## Middle layer
 
 This layer contains only a few drawing functions (initialization, cursor position setting, drawing window setting, point drawing, horizontal and vertical line drawing, bitmap drawing, image drawing and readback). The upper layer must map all the drawing functions to these few drawing functions. This layer depends on the type of display, because the drawing functions on each display can be solved with a different method, so we have to add the files of the display we use to the project (e.g. ili9341.h / c).
 
@@ -78,15 +78,15 @@ ili9341.h (or other display.h):
 - color depth for reading: READBITDEPTH
 - do not change the screen size: LCD_PIXEL_WIDTH, LCD_PIXEL_HEIGHT
 
-# Lower layer
+## Lower layer
 
 Carries out the delivery of the data required for initialization and drawing over a physical channel. The physical channel can be an SPI interface or a parallel interface. The parallel interface can use the GPIO pins “lcd_io_gpiox_hal.h / c”, or if the controller contains FSC/FSMC peripherals, we use the “lcd_io_fsmcx_hal.h / c” interface, because it is much faster.
 
-# Touchscreen
+## Touchscreen
 
 The touchscreen driver has only 2 layers.
 
-# Upper layer
+## Upper layer
 
 - stm32_adafruit_ts.h, stm32_adafruit_ts.c, ts.h
 
@@ -94,7 +94,7 @@ Setting in stm32_adafruit_ts.h:
 
 - TS_CINDEX values that are necessary to calculate the screen coordinate from the AD value of the touchscreen. It is possible to produce with the App TouchCalib or the App / Paint application.
 
-# Lower layer
+## Lower layer
 
 There are 4 types of touchscreen drivers
 - Analog resistive touchscreen with GPIO 8 bits (io_gpio / lcdts_io_gpio8_hal.h, lcdts_io_gpio8_hal.c)
