@@ -27,9 +27,6 @@
 
 #define TS_SPI_TIMEOUT        HAL_MAX_DELAY
 
-#define TOUCH_FILTER          16
-#define TOUCH_MAXREPEAT       8
-
 #define XPT2046_MODE          0
 #define XPT2046_SER           0
 #define XPT2046_PD            0

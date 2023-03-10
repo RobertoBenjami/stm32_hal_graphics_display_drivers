@@ -92,3 +92,9 @@
 
 /* Wait time before reading xpt2046 (see: TS_IO_Transaction and TS_IO_Delay dunctions) */
 #define XPT2046_READDELAY     0
+
+/* The touch value that it still accepts as the same value */
+#define TOUCH_FILTER          32
+
+/* This is how many times it tries to read the same value */
+#define TOUCH_MAXREPEAT       8

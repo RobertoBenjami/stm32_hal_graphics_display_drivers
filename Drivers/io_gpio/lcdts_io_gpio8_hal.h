@@ -87,6 +87,12 @@
 /* these constants can be defined with the application appTouchCalib.c */
 #define  TS_CINDEX            {-1409179, -21, -107208, 42542238, 136441, -1509, -512509626}
 
+/* The touch value that it still accepts as the same value */
+#define TOUCH_FILTER          32
+
+/* This is how many times it tries to read the same value */
+#define TOUCH_MAXREPEAT       8
+
 /*=============================================================================
 I/O group optimization so that GPIO operations are not performed bit by bit:
 Note: If the pins are in order, they will automatically optimize.

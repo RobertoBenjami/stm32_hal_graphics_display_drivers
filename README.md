@@ -43,7 +43,7 @@ Take the example program “appLcdSpeedTest.c” as an example.
 ## Upper layer
 
 The “appLcdSpeedTest.c” uses the functions of the upper layer of the driver (stm32_adafruit_lcd.h / c). This layer contains many drawing functions (initialization, point, line, rectangle, circle, oval, some filled shapes, text, bitmap, image, point and image readback, etc.), if we need more, we can supplement it. This part of the driver is the same for all display types.
-- bmp.h is required for the bitmap function, it contains the description of the bitmap header (letter drawing also uses the bitmap function).
+- bmp.h is required for the bitmap function, it contains the description of the bitmap header
 - lcd.h is a port for upper and middle layer communication.
 
 The following things can be set in this layer

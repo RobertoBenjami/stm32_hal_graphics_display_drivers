@@ -934,9 +934,6 @@ void LCD_IO_Transaction(uint16_t Cmd, uint8_t *pData, uint32_t Size, uint32_t Du
 /* if not used the TS_IRQ pin -> Z1-Z2 touch sensitivy */
 #define TS_ZSENS              128
 
-#define TOUCH_FILTER          16
-#define TOUCH_MAXREPEAT       8
-
 #define XPT2046_MODE          0
 #define XPT2046_SER           0
 #define XPT2046_PD            0

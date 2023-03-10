@@ -184,4 +184,10 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
    note: if 0 -> does not use DMA for 24-bit drawing and reading */
 #define LCD_RGB24_BUFFSIZE    0
 
+/* The touch value that it still accepts as the same value */
+#define TOUCH_FILTER          32
+
+/* This is how many times it tries to read the same value */
+#define TOUCH_MAXREPEAT       8
+
 #endif /* #ifndef __LCDTS_IO_XPT2046_SPI_HAL_H__ */

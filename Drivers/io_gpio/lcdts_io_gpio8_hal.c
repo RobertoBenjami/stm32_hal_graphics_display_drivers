@@ -403,12 +403,6 @@ void LCD_IO_Transaction(uint16_t Cmd, uint8_t *pData, uint32_t Size, uint32_t Du
 
 //=============================================================================
 
-/* if not used the TS_IRQ pin -> Z1-Z2 touch sensitivy */
-#define TS_ZSENS              128
-
-#define TOUCH_FILTER          16
-#define TOUCH_MAXREPEAT       8
-
 #define ABS(N)                (((N)<0) ? (-(N)) : (N))
 
 //=============================================================================
@@ -522,40 +516,6 @@ uint16_t TS_IO_GetY(void)
   LL_GPIO_SetPinMode(LCD_D6_GPIO_Port, LCD_D6_Pin, LL_GPIO_MODE_OUTPUT);/* XP = OUT */
   return ret;
 }
-
-#if 0
-//-----------------------------------------------------------------------------
-/* read the Z1 position */
-uint16_t TS_IO_GetZ1(void)
-{
-  uint16_t ret;
-  LL_GPIO_SetPinMode(LCD_RS_GPIO_Port, LCD_RS_Pin, LL_GPIO_MODE_ANALOG);/* XM = AN_INPUT */
-  LL_GPIO_SetPinMode(LCD_WR_GPIO_Port, LCD_WR_Pin, LL_GPIO_MODE_ANALOG);/* YP = AN_INPUT */
-  HAL_GPIO_WritePin(LCD_D6_GPIO_Port, LCD_D6_Pin, GPIO_PIN_RESET);      /* XP = 0 */
-  HAL_GPIO_WritePin(LCD_D7_GPIO_Port, LCD_D7_Pin, GPIO_PIN_SET);        /* YM = 1 */
-  ret = TS_IO_GetAd(TS_WR_ADCCH);                                       /* Ad Converter TS_YP_ADCCH */
-  HAL_GPIO_WritePin(LCD_D6_GPIO_Port, LCD_D6_Pin, GPIO_PIN_SET);        /* XP = 1 */
-  LL_GPIO_SetPinMode(LCD_RS_GPIO_Port, LCD_RS_Pin, LL_GPIO_MODE_OUTPUT);/* XM = OUT */
-  LL_GPIO_SetPinMode(LCD_WR_GPIO_Port, LCD_WR_Pin, LL_GPIO_MODE_OUTPUT);/* YP = OUT */
-  return ret;
-}
-
-//-----------------------------------------------------------------------------
-/* read the Z2 position */
-uint16_t TS_IO_GetZ2(void)
-{
-  uint16_t ret;
-  LL_GPIO_SetPinMode(LCD_RS_GPIO_Port, LCD_RS_Pin, LL_GPIO_MODE_ANALOG);/* XM = AN_INPUT */
-  LL_GPIO_SetPinMode(LCD_WR_GPIO_Port, LCD_WR_Pin, LL_GPIO_MODE_ANALOG);/* YP = AN_INPUT */
-  HAL_GPIO_WritePin(LCD_D6_GPIO_Port, LCD_D6_Pin, GPIO_PIN_RESET);      /* XP = 0 */
-  HAL_GPIO_WritePin(LCD_D7_GPIO_Port, LCD_D7_Pin, GPIO_PIN_SET);        /* YM = 1 */
-  ret = TS_IO_GetAd(TS_RS_ADCCH);                                       /* Ad Converter TS_XM_ADCCH */
-  HAL_GPIO_WritePin(LCD_D6_GPIO_Port, LCD_D6_Pin, GPIO_PIN_SET);        /* XP = 1 */
-  LL_GPIO_SetPinMode(LCD_RS_GPIO_Port, LCD_RS_Pin, LL_GPIO_MODE_OUTPUT);/* XM = OUT */
-  LL_GPIO_SetPinMode(LCD_WR_GPIO_Port, LCD_WR_Pin, LL_GPIO_MODE_OUTPUT);/* YP = OUT */
-  return ret;
-}
-#endif
 
 TS_DrvTypeDef   gpio_ts_drv =
 {
