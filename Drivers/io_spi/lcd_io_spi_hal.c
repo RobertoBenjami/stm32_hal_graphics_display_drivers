@@ -475,6 +475,7 @@ void LCDWriteFillMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
     else /* the transaction can be performed with one DMA operation */
       dmastatus.trsize = Size;
 
+    __HAL_DMA_DISABLE(LCD_SPI_HANDLE.hdmatx);
     HAL_DMA_Init(LCD_SPI_HANDLE.hdmatx);
     HAL_SPI_Transmit_DMA(&LCD_SPI_HANDLE, (uint8_t *)dmastatus.ptr, dmastatus.trsize);
     LcdDmaWaitEnd(Mode & LCD_IO_MULTIDATA);
@@ -529,6 +530,7 @@ void LCDWriteFillMultiData16to24(uint8_t * pData, uint32_t Size, uint32_t Mode)
     LCD_SPI_HANDLE.hdmatx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     LCD_SPI_HANDLE.hdmatx->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     LCD_SPI_HANDLE.hdmatx->Init.MemInc = DMA_MINC_ENABLE;
+    __HAL_DMA_DISABLE(LCD_SPI_HANDLE.hdmatx);
     HAL_DMA_Init(LCD_SPI_HANDLE.hdmatx);
 
     dmastatus.maxtrsize = LCD_RGB24_BUFFSIZE;
@@ -713,6 +715,8 @@ void LCDReadMultiData8and16(uint8_t * pData, uint32_t Size, uint32_t Mode)
       dmastatus.status = DMA_STATUS_MULTIDATA | DMA_STATUS_16BIT;
     }
     LCD_SPI_HANDLE.hdmarx->Init.MemInc = DMA_MINC_ENABLE;
+
+    __HAL_DMA_DISABLE(LCD_SPI_HANDLE.hdmarx);
     HAL_DMA_Init(LCD_SPI_HANDLE.hdmarx);
 
     dmastatus.maxtrsize = DMA_MAXSIZE;
@@ -771,6 +775,7 @@ void LCDReadMultiData24to16(uint8_t * pData, uint32_t Size, uint32_t Mode)
     LCD_SPI_HANDLE.hdmarx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     LCD_SPI_HANDLE.hdmarx->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     LCD_SPI_HANDLE.hdmarx->Init.MemInc = DMA_MINC_ENABLE;
+    __HAL_DMA_DISABLE(LCD_SPI_HANDLE.hdmarx);
     HAL_DMA_Init(LCD_SPI_HANDLE.hdmarx);
 
     dmastatus.maxtrsize = LCD_RGB24_BUFFSIZE;
