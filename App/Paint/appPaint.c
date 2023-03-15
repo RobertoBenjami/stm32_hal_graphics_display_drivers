@@ -109,11 +109,11 @@ void ts_calib(void)
   #elif TS_CALBIBRATE == 3
   BSP_TS_CalibCalc(&tc, &dc, &ci);
   BSP_TS_SetCindex(&ci);
-  BSP_LCD_DisplayStringAt(10, 10, (uint8_t *)"#define TS_CINDEX", LEFT_MODE);
+  BSP_LCD_DisplayStringAt(10, 0, (uint8_t *)"#define TS_CINDEX", LEFT_MODE);
   for(uint32_t i=0; i<7; i++)
   {
     sprintf(s, "%d", (int)ci[i]);
-    BSP_LCD_DisplayStringAt(10, i*10+20, (uint8_t *)s, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(10, (i+1)*TS_CALIBTEXTSIZE, (uint8_t *)s, LEFT_MODE);
   }
   Delay(CALIBDELAY);
   while(!ts_drv->DetectTouch(0))
