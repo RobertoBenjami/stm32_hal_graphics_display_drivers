@@ -125,7 +125,7 @@ void ts_calib(void)
     Delay(TOUCHDELAY);
   #endif
   Delay(CALIBDELAY);
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
+  BSP_LCD_Clear(BSP_LCD_GetBackColor());
 }
 
 #endif
