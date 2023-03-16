@@ -176,7 +176,7 @@ struct tObject
 
 void tButton_event(tObject * self, tEvent * event);
 
-/* button object type definition (the first 5 variables are the same as in tObject -> inheritance without C++) */
+/* button object type definition */
 typedef struct
 {
   tObject           obj;
