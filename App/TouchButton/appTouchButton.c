@@ -163,7 +163,7 @@ typedef struct
 }tEvent;
 
 //-----------------------------------------------------------------------------
-/* common object type definition */
+/* common visual object type definition */
 typedef struct tObject tObject;
 struct tObject
 {
@@ -179,11 +179,7 @@ void tButton_event(tObject * self, tEvent * event);
 /* button object type definition (the first 5 variables are the same as in tObject -> inheritance without C++) */
 typedef struct
 {
-  uint16_t          x;                  /* x position */
-  uint16_t          y;                  /* y position */
-  uint16_t          width;              /* width */
-  uint16_t          height;             /* height */
-  void              (*eventProc)(tObject * self, tEvent * event); /* event function */
+  tObject           obj;
   void              (*onTouch)(void);   /* touch function */
   sFONT *           font;               /* font address */
   uint8_t           chr_u[9];           /* button in passive state */
@@ -196,11 +192,13 @@ typedef struct
 /* off button properties */
 const tButton btn_off =
 {
-  56,                                   /* x */
-  32,                                   /* y */
-  128,                                  /* width */
-  64,                                   /* height */
-  &tButton_event,                       /* event function */
+  {
+    56,                                 /* x */
+    32,                                 /* y */
+    128,                                /* width */
+    64,                                 /* height */
+    &tButton_event                      /* event function */
+  },
   &offButtonTouchDown,                  /* touch function */
   &font_128x64_8_ledonoff,              /* font address */
   "\x21\x20\x22\x24\x25",               /* background, border, text, led pin, led */
@@ -212,11 +210,13 @@ const tButton btn_off =
 /* on button properties */
 const tButton btn_on =
 {
-  56,
-  144,
-  128,
-  64,
-  &tButton_event,
+  {
+    56,
+    144,
+    128,
+    64,
+    &tButton_event
+  },
   &onButtonTouchDown,
   &font_128x64_8_ledonoff,
   "\x21\x20\x23\x24\x25\x26",           /* background, border, text, led pin, led, led light */
@@ -244,7 +244,7 @@ void tButton_paint(tButton * self, uint8_t off_on)
     pchr = self->chr_d;
     pcolors = self->color_d;
   }
-  BSP_LCD_DisplayMultilayerChar(self->x, self->y, pchr, pcolors, self->font);
+  BSP_LCD_DisplayMultilayerChar(self->obj.x, self->obj.y, pchr, pcolors, self->font);
 }
 
 //-----------------------------------------------------------------------------
