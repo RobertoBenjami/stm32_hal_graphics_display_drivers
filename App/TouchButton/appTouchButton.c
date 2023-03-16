@@ -17,7 +17,7 @@
    - 1: on  (the touchscreen must be calibrated at startup)
    - 2: on and printf (the touchscreen must be calibrated at startup and printf the cindex values)
    - 3: on and displays the TS_CINDEX values on the screen */
-#define TS_CALBIBRATE         0
+#define TS_CALBIBRATE         3
 
 /* If TS_CALBIBRATE == 3 -> Text line size */
 #define TS_CALIBTEXTSIZE      20
@@ -108,13 +108,15 @@ void ts_calib(void)
   BSP_TS_SetCindex(&ci);
   printf("\r\n#define  TS_CINDEX            {%d, %d, %d, %d, %d, %d, %d}\r\n", (int)ci[0], (int)ci[1], (int)ci[2], (int)ci[3], (int)ci[4], (int)ci[5], (int)ci[6]);
   #elif TS_CALBIBRATE == 3
+  BSP_LCD_Clear(BSP_LCD_GetBackColor());
+
   BSP_TS_CalibCalc(&tc, &dc, &ci);
   BSP_TS_SetCindex(&ci);
-  BSP_LCD_DisplayStringAt(10, 10, (uint8_t *)"#define TS_CINDEX", LEFT_MODE);
+  BSP_LCD_DisplayStringAt(10, 0, (uint8_t *)"#define TS_CINDEX", LEFT_MODE);
   for(uint32_t i=0; i<7; i++)
   {
     sprintf(s, "%d", (int)ci[i]);
-    BSP_LCD_DisplayStringAt(10, i*10+20, (uint8_t *)s, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(10, (i+1) * TS_CALIBTEXTSIZE, (uint8_t *)s, LEFT_MODE);
   }
   Delay(CALIBDELAY);
   while(!ts_drv->DetectTouch(0))
@@ -128,12 +130,14 @@ void ts_calib(void)
 
 #endif
 
+//-----------------------------------------------------------------------------
 extern sFONT font_128x64_8_ledonoff;    /* button pictures */
 extern sFONT led_48x48;                 /* screen led pictures */
 
 void offButtonTouchDown(void);
 void onButtonTouchDown(void);
 
+//-----------------------------------------------------------------------------
 /* event type codes */
 enum EVENTCODE{EVENT_NONE, EVENT_PAINT, EVENT_TOUCH_DOWN, EVENT_TOUCH_UP, EVENT_TOUCH_MOVE, EVENT_TOUCH_ENTER, EVENT_TOUCH_LEAVE};
 
@@ -158,6 +162,7 @@ typedef struct
   };
 }tEvent;
 
+//-----------------------------------------------------------------------------
 /* common object type definition */
 typedef struct tObject tObject;
 struct tObject
@@ -187,6 +192,7 @@ typedef struct
   uint16_t          color_d[9];         /* colors in active state */
 }tButton;
 
+//-----------------------------------------------------------------------------
 /* off button properties */
 const tButton btn_off =
 {
@@ -222,6 +228,7 @@ const tButton btn_on =
 /* 2 button array */
 const tObject * objects[] = {(tObject *)&btn_off, (tObject *)&btn_on, NULL};
 
+//-----------------------------------------------------------------------------
 /* paint button on screen */
 void tButton_paint(tButton * self, uint8_t off_on)
 {
@@ -240,6 +247,7 @@ void tButton_paint(tButton * self, uint8_t off_on)
   BSP_LCD_DisplayMultilayerChar(self->x, self->y, pchr, pcolors, self->font);
 }
 
+//-----------------------------------------------------------------------------
 /* tbutton event processor */
 void tButton_event(tObject * self, tEvent * event)
 {
@@ -254,7 +262,7 @@ void tButton_event(tObject * self, tEvent * event)
   }
 }
 
-
+//-----------------------------------------------------------------------------
 /* this function should work when the touchscreen off button is pressed */
 void offButtonTouchDown(void)
 {
@@ -263,6 +271,7 @@ void offButtonTouchDown(void)
   BSP_LCD_DisplayMultilayerChar(230, 100, (uint8_t *)"\x20\x21", (uint16_t *)&ledoffcolor, &led_48x48); /* lcd screen led off */
 }
 
+//-----------------------------------------------------------------------------
 /* this function should work when the touchscreen on button is pressed */
 void onButtonTouchDown(void)
 {
@@ -271,6 +280,7 @@ void onButtonTouchDown(void)
   BSP_LCD_DisplayMultilayerChar(230, 100, (uint8_t *)"\x20\x21", (uint16_t *)&ledoncolor, &led_48x48); /* lcd screen led on */
 }
 
+//-----------------------------------------------------------------------------
 /* read touchscreen and create event */
 void GetTouch(tEvent * event)
 {
@@ -306,6 +316,7 @@ void GetTouch(tEvent * event)
   memcpy(&pre_ts, &ts, sizeof(TS_StateTypeDef));
 }
 
+//-----------------------------------------------------------------------------
 /* event processor */
 void eventProcess(tObject ** os, tEvent * event)
 {
@@ -341,6 +352,7 @@ void eventProcess(tObject ** os, tEvent * event)
   }
 }
 
+//-----------------------------------------------------------------------------
 #define  BACKCOLOR   LCD_COLOR(16, 32, 32)
 
 void mainApp(void)
