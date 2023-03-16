@@ -185,7 +185,7 @@ void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi);
 #define LCD_RGB24_BUFFSIZE    0
 
 /* The touch value that it still accepts as the same value */
-#define TOUCH_FILTER          32
+#define TOUCH_FILTER          40
 
 /* This is how many times it tries to read the same value */
 #define TOUCH_MAXREPEAT       8
