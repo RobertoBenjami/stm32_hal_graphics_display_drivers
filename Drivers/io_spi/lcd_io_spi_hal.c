@@ -563,7 +563,7 @@ void LCDWriteFillMultiData16to24(uint8_t * pData, uint32_t Size, uint32_t Mode)
     uint32_t rgb888;
     if(Mode & LCD_IO_FILL)
     { /* fill 16bit to 24bit */
-      rgb888 = RGB565TO888(*pData);
+      rgb888 = RGB565TO888(*(uint16_t *)pData);
       while(Size--)
         HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)&rgb888, 3, LCD_SPI_TIMEOUT);
     }
@@ -571,9 +571,9 @@ void LCDWriteFillMultiData16to24(uint8_t * pData, uint32_t Size, uint32_t Mode)
     { /* multidata 16bit to 24bit */
       while(Size--)
       {
-        rgb888 = RGB565TO888(*pData);
+        rgb888 = RGB565TO888(*(uint16_t *)pData);
         HAL_SPI_Transmit(&LCD_SPI_HANDLE, (uint8_t *)&rgb888, 3, LCD_SPI_TIMEOUT);
-        pData++;
+        pData+=2;
       }
     }
     #elif LCD_RGB24_BUFFSIZE > 0
@@ -616,7 +616,7 @@ void LCDWriteFillMultiData16to24(uint8_t * pData, uint32_t Size, uint32_t Mode)
         }
         BitmapConvert16to24((uint16_t *)pData, lcd_rgb24_buffer, trsize);
         HAL_SPI_Transmit(&LCD_SPI_HANDLE, lcd_rgb24_buffer, trsize * 3, LCD_SPI_TIMEOUT);
-        pData += trsize;
+        pData += trsize << 1;
       }
     }
     #endif /* #elif LCD_RGB24_BUFFSIZE > 0 */
