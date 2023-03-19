@@ -86,6 +86,7 @@
 EndDependencies */
     
 /* Includes ------------------------------------------------------------------*/
+#include <string.h>
 #include "lcd.h"
 #include "stm32_adafruit_lcd.h"
 #include "Fonts/fonts.h"
@@ -93,8 +94,8 @@ EndDependencies */
 /* @defgroup STM32_ADAFRUIT_LCD_Private_Defines */
 #define POLY_X(Z)             ((int32_t)((Points + (Z))->X))
 #define POLY_Y(Z)             ((int32_t)((Points + (Z))->Y))
-#define NULL                  (void *)0
 
+/* Bitmap header size */
 #define OFFSET_BITMAP         54
 
 /* @defgroup STM32_ADAFRUIT_LCD_Private_Macros */
@@ -256,7 +257,7 @@ void BSP_LCD_ClearStringLine(uint16_t Line)
   * @param  Xpos: Start column address
   * @param  Ypos: Line where to display the character shape.
   * @param  Ascii: Character ascii code
-  *           This parameter must be a number between Min_Data = 0x20 and Max_Data = 0x7E 
+  *   This parameter must be a number between Min_Data = 0x20 and Max_Data = 0xFF (or while the font last)
   * @retval None
   */
 void BSP_LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
@@ -270,7 +271,7 @@ void BSP_LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
   * @param  Xpos: Start column address
   * @param  Ypos: Line where to display the character shape.
   * @param  Chars: Characters ascii code
-  *           This parameter must be a number between Min_Data = 0x20 and Max_Data = 0x7E
+  *   This parameter must be a number between Min_Data = 0x20 and Max_Data = 0xFF (or while the font last)
   * @param  Colors: Character layer colors
   * @param  sf: Font table address
   * @retval None
@@ -334,7 +335,129 @@ void BSP_LCD_DisplayMultilayerChar(uint16_t Xpos, uint16_t Ypos, uint8_t *Chars,
   {
     BSP_LCD_DrawRGB16Image(Xpos, Ypos + y - ay, sf->Width, ay, (uint16_t *)bitmap);
   }
+}
 
+/**
+  * @brief  Displays one multilayer big character and display on string (typical: caption on a multi-layered icon)
+  * @param  Xpos: Start column address
+  * @param  Ypos: Line where to display the character shape.
+  * @param  Chars: Characters ascii code
+  *   This parameter must be a number between Min_Data = 0x20 and Max_Data = 0xFF (or while the font last)
+  * @param  Colors: Character layer colors
+  * @param  sf: Font table address
+  * @param  onX: onString relative X position
+  * @param  onY: onString relative Y position
+  * @param  onChars: onString character array address (font and color from DrawProp)
+  * @retval None
+  */
+void BSP_LCD_DisplayStringOnMultilayerChar(uint16_t Xpos, uint16_t Ypos, uint8_t *Chars, uint16_t *Colors, sFONT *sf,
+                                           uint16_t onX, uint16_t onY, uint8_t *onChars)
+{
+  uint32_t x, y, ay = 0;                /* actual coordinatas */
+  uint8_t *pcs[MAX_CHAR_LAYER];         /* character set pointers for layers */
+  uint8_t *pc;                          /* actual character set pointer */
+  uint32_t li = 0;                      /* layer index */
+  uint32_t csi = 0;                     /* character set byte array index */
+  uint16_t *pb;                         /* bitmap pointer */
+  uint32_t bmsy;                        /* bitmap buffer y size */
+  uint8_t  cbm;                         /* character set bitmap mask */
+  uint16_t onwidth;                     /* onstring full width (pixel) */
+  uint16_t onchi;                       /* onstring character index */
+  uint16_t onchlsize;                   /* onstring font line size [byte] */
+  uint16_t oncx;                        /* onstring actual characacter x pos */
+  uint16_t oncy = 0;                    /* onstring actual characacter y pos */
+
+  bmsy = (sizeof(bitmap) >> 1) / sf->Width;
+  if(!bmsy)
+    return;
+
+  while(Chars[li] >= ' ' && li < 8)
+  {
+    pcs[li] = (uint8_t *)&sf->table[(Chars[li]-' ') * sf->Height * ((sf->Width + 7) / 8)];
+    li++;
+  }
+
+  onchlsize = ((DrawProp.pFont->Width + 7) /8);
+  onwidth = strlen((char *)onChars) * DrawProp.pFont->Width;
+
+  if(onX >= sf->Width)
+    onX = sf->Width;
+
+  if(onwidth >= sf->Width - onX)
+    onwidth = sf->Width - onX;
+
+  cbm = 0x80;
+  pb = (uint16_t *)bitmap;
+
+  for(y = 0; y < sf->Height; y++)
+  {
+    for(x = 0; x < sf->Width; x++)
+    {
+      if(!cbm)
+      { /* charcter set byte step */
+        cbm = 0x80;
+        csi++;
+      }
+
+      *pb = DrawProp.BackColor;
+      li = 0;
+      while(Chars[li] >= ' ' && li < 8)
+      {
+        pc = pcs[li];
+        if(pc[csi] & cbm)
+          *pb = Colors[li];
+        li++;
+      }
+
+      pb++;
+      cbm >>= 1;
+    } /* for(x = 0; x < sf->Width; x++) */
+
+    if(y >= onY && y < onY + DrawProp.pFont->Height)
+    {
+      pb -= (sf->Width - onX);
+      oncx = 0;
+      onchi = 0;
+      pc = (uint8_t *)&DrawProp.pFont->table[(onChars[onchi]-' ') * DrawProp.pFont->Height * onchlsize + oncy * onchlsize];
+      cbm = 0x80;
+
+      for(x = 0; x < onwidth; x++)
+      {
+        if(!cbm)                                  /* byte step in character table ?*/
+        { /* charcter set byte step */
+          cbm = 0x80;
+          pc++;
+        }
+        if(*pc & cbm)
+          *pb = DrawProp.TextColor;
+        pb++;
+        cbm >>= 1;
+        oncx++;
+        if(oncx >= DrawProp.pFont->Width)
+        {
+          oncx = 0;
+          onchi++;
+          pc = (uint8_t *)&DrawProp.pFont->table[(onChars[onchi]-' ') * DrawProp.pFont->Height * onchlsize + oncy * onchlsize];
+          cbm = 0x80;
+        }
+      }
+      oncy++;
+      pb += (sf->Width - onX - onwidth);
+    } /* if(y >= onY && y < onY + DrawProp.pFont->Height) */
+
+    cbm = 0;
+    ay++;
+    if(ay >= bmsy - 1)
+    {
+      BSP_LCD_DrawRGB16Image(Xpos, Ypos + y + 1 - ay, sf->Width, ay, (uint16_t *)bitmap);
+      ay = 0;
+      pb = (uint16_t *)bitmap;
+    }
+  } /* for(y = 0; y < sf->Height; y++) */
+  if(ay)
+  {
+    BSP_LCD_DrawRGB16Image(Xpos, Ypos + y - ay, sf->Width, ay, (uint16_t *)bitmap);
+  }
 }
 
 /**
