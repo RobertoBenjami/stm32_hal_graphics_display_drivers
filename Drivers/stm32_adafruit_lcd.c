@@ -14,6 +14,7 @@
  * - Modify : ReadID return type: uint16_t to uint32_t
  * - Modify : DrawChar function character size limit removed, and smaller bitmap array is sufficient for operation
  * - Add : BSP_LCD_DisplayMultilayerChar function (mainly for drawing icons and buttons)
+ * - Add : BSP_LCD_DisplayStringOnMultilayerChar function (mainly for drawing texticons and textbuttons)
  * */
 
 /**

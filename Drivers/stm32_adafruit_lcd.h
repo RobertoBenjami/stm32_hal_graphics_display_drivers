@@ -7,6 +7,8 @@
  - 2019.12 Add LCD_DEFAULT_FONT, LCD_DEFAULT_BACKCOLOR, LCD_DEFAULT_TEXTCOLOR, LCD_INIT_CLEAR
  - 2020.05 Add BSP_LCD_Scroll function
  - 2022.11 Modify ReadID return type: uint16_t to uint32_t
+ - 2023.03 Add BSP_LCD_DisplayMultilayerChar function (mainly for drawing icons and buttons)
+ - 2023.03 Add BSP_LCD_DisplayStringOnMultilayerChar function (mainly for drawing texticons and textbuttons)
 */
 
 /**
