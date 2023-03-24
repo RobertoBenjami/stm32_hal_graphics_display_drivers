@@ -65,12 +65,11 @@
 /* LCD default font (Font8 or Font12 or Font16 or Font20 or Font24) */
 #define LCD_DEFAULT_FONT      Font12
 
-/* Max font size */
-#define MAX_WIDTH_FONT        24
-#define MAX_HEIGHT_FONT       16
+/* Font bitmap buffer size (even for the largest font size, at least one line should fit in it) */
+#define FONTBITMAPBUFSIZE     24 * 16
 
 /* BSP_LCD_DisplayMultilayerChar max layer */
-#define MAX_CHAR_LAYER        8
+#define MAX_CHAR_LAYER        12
 
 /* LCD default colors */
 #define LCD_DEFAULT_BACKCOLOR LCD_COLOR_BLACK
@@ -162,7 +161,6 @@ void     BSP_LCD_ClearStringLine(uint16_t Line);
 void     BSP_LCD_DisplayStringAtLine(uint16_t Line, uint8_t *ptr);
 void     BSP_LCD_DisplayStringAt(uint16_t Xpos, uint16_t Ypos, uint8_t *Text, Line_ModeTypdef Mode);
 void     BSP_LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii);
-void     BSP_LCD_DisplayMultilayerChar(uint16_t Xpos, uint16_t Ypos, uint8_t *Chars, uint16_t *Colors, sFONT *sf);
 void     BSP_LCD_DisplayStringOnMultilayerChar(uint16_t Xpos, uint16_t Ypos, uint8_t *Chars, uint16_t *Colors, sFONT *sf,
                                                uint16_t onX, uint16_t onY, uint8_t *onChars);
 

@@ -1,3 +1,10 @@
+/* This example program shows how to draw buttons on the screen and operate them with the touchscreen.
+ *
+ * author: Roberto Benjami
+ * version:  2023.03
+ *
+ * */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -244,7 +251,7 @@ void tButton_paint(tButton * self, uint8_t off_on)
     pchr = self->chr_d;
     pcolors = self->color_d;
   }
-  BSP_LCD_DisplayMultilayerChar(self->obj.x, self->obj.y, pchr, pcolors, self->font);
+  BSP_LCD_DisplayStringOnMultilayerChar(self->obj.x, self->obj.y, pchr, pcolors, self->font, 0, 0, NULL);
 }
 
 //-----------------------------------------------------------------------------
@@ -268,7 +275,10 @@ void offButtonTouchDown(void)
 {
   static const uint16_t ledoffcolor[] = {LCD_COLOR(100, 10, 10), LCD_COLOR(110, 15, 15)};
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); /* led off */
-  BSP_LCD_DisplayMultilayerChar(230, 100, (uint8_t *)"\x20\x21", (uint16_t *)&ledoffcolor, &led_48x48); /* lcd screen led off */
+  BSP_LCD_SetFont(&Font12);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayStringOnMultilayerChar(230, 100, (uint8_t *)"\x20\x21", (uint16_t *)&ledoffcolor, &led_48x48,
+                                        (led_48x48.Width - Font12.Width * 3)/2, (led_48x48.Height - Font12.Height) / 2, (uint8_t *)"off");
 }
 
 //-----------------------------------------------------------------------------
@@ -277,7 +287,10 @@ void onButtonTouchDown(void)
 {
   static const uint16_t ledoncolor[]  = {LCD_COLOR(240, 15, 15), LCD_COLOR(255, 120, 30)};
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET); /* led on */
-  BSP_LCD_DisplayMultilayerChar(230, 100, (uint8_t *)"\x20\x21", (uint16_t *)&ledoncolor, &led_48x48); /* lcd screen led on */
+  BSP_LCD_SetFont(&Font12);
+  BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+  BSP_LCD_DisplayStringOnMultilayerChar(230, 100, (uint8_t *)"\x20\x21", (uint16_t *)&ledoncolor, &led_48x48,
+                                        (led_48x48.Width - Font12.Width * 2) / 2, (led_48x48.Height - Font12.Height) / 2, (uint8_t *)"on");
 }
 
 //-----------------------------------------------------------------------------
