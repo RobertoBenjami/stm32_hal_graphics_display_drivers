@@ -1,7 +1,7 @@
 /*
  * XPT2046 HAL touch driver
  * author: Roberto Benjami
- * v.2023.01
+ * v.2023.03
  *
  * - software and hardware SPI
  */
@@ -15,9 +15,17 @@
 #include "ts_xpt2046.h"
 
 #if defined(STM32H7)
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CFG1, SPI_CFG1_MBR, br << SPI_CFG1_MBR_Pos)
+#define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CFG1, SPI_CFG1_MBR, br << SPI_CFG1_MBR_Pos)
 #else
-#define  LCD_SPI_SETBAUDRATE(hlcdspi, br)         MODIFY_REG(hlcdspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
+#define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
+#endif
+
+#if TS_CS_MODE == 0 || TS_SPI_HANDLE == -1
+#define TS_CS_ON   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET)
+#define TS_CS_OFF  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET)
+#elif TS_CS_MODE == 1
+#define TS_CS_ON
+#define TS_CS_OFF
 #endif
 
 //=============================================================================
@@ -80,7 +88,7 @@ uint16_t TS_IO_Transaction(uint8_t cmd)
 {
   uint16_t ret = 0;
   uint32_t i;
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
+  TS_CS_ON;
   for(i=0; i<8; i++)
   {
     HAL_GPIO_WritePin(TS_MOSI_GPIO_Port, TS_MOSI_Pin, cmd & 0x80);
@@ -106,7 +114,7 @@ uint16_t TS_IO_Transaction(uint8_t cmd)
     TS_CLK_DELAY;
     HAL_GPIO_WritePin(TS_SCK_GPIO_Port, TS_SCK_Pin, GPIO_PIN_RESET);
   }
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
+  TS_CS_OFF;
   return ((ret & 0x7FFF) >> 3);
 }
 #else
@@ -118,13 +126,13 @@ uint16_t TS_IO_Transaction(uint8_t cmd)
 {
   const uint16_t d = 0;
   uint16_t ret;
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET);
+  TS_CS_ON;
   HAL_SPI_Transmit(&TS_SPI_HANDLE, (uint8_t *)&cmd, 1, TS_SPI_TIMEOUT);
   #if XPT2046_READDELAY > 0
   TS_IO_Delay(XPT2046_READDELAY);
   #endif
   HAL_SPI_TransmitReceive(&TS_SPI_HANDLE, (uint8_t *)&d, (uint8_t *)&ret, 2, TS_SPI_TIMEOUT);
-  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET);
+  TS_CS_OFF;
   ret = __REVSH(ret);
   return ((ret & 0x7FFF) >> 3);
 }
@@ -172,7 +180,7 @@ TS_DrvTypeDef  *ts_drv = &xpt2046_ts_drv;
 void xpt2046_ts_Init(uint16_t DeviceAddr)
 {
   #if TS_SPI_HANDLE != -1 && defined(TS_SPI_SPD) && TS_SPI_SPD >= 0 && TS_SPI_SPD <= 7
-  LCD_SPI_SETBAUDRATE(TS_SPI_HANDLE, TS_SPI_SPD);
+  TS_SPI_SETBAUDRATE(TS_SPI_HANDLE, TS_SPI_SPD);
   #endif
 }
 
