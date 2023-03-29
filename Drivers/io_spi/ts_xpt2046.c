@@ -20,7 +20,7 @@
 #define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
 #endif
 
-#if TS_CS_MODE == 0 || TS_SPI_HANDLE == -1
+#if !defined(TS_SPI_HANDLE) || TS_SPI_HANDLE == -1 || TS_CS_MODE == 0
 #define TS_CS_ON   HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_RESET)
 #define TS_CS_OFF  HAL_GPIO_WritePin(TS_CS_GPIO_Port, TS_CS_Pin, GPIO_PIN_SET)
 #elif TS_CS_MODE == 1
