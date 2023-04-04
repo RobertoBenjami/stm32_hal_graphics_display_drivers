@@ -14,7 +14,7 @@
 #include "ts.h"
 #include "ts_xpt2046.h"
 
-#if defined(STM32H7)
+#if defined(STM32H5) || defined(STM32H7)
 #define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CFG1, SPI_CFG1_MBR, br << SPI_CFG1_MBR_Pos)
 #else
 #define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)
