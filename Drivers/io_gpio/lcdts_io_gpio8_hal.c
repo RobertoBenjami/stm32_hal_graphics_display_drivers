@@ -29,6 +29,8 @@
 #include "stm32f4xx_ll_gpio.h"
 #elif defined(STM32F7)
 #include "stm32f7xx_ll_gpio.h"
+#elif defined(STM32H5)
+#include "stm32h5xx_ll_gpio.h"
 #elif defined(STM32H7)
 #include "stm32h7xx_ll_gpio.h"
 #elif defined(STM32G0)
