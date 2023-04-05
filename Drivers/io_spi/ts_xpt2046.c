@@ -1,7 +1,7 @@
 /*
  * XPT2046 HAL touch driver
  * author: Roberto Benjami
- * v.2023.03
+ * v.2023.04
  *
  * - software and hardware SPI
  */
@@ -14,7 +14,7 @@
 #include "ts.h"
 #include "ts_xpt2046.h"
 
-#if defined(STM32H5) || defined(STM32H7)
+#if defined(STM32H5) || defined(STM32H7) || defined(STM32WBA)
 #define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CFG1, SPI_CFG1_MBR, br << SPI_CFG1_MBR_Pos)
 #else
 #define  TS_SPI_SETBAUDRATE(htsspi, br)         MODIFY_REG(htsspi.Instance->CR1, SPI_CR1_BR, br << SPI_CR1_BR_Pos)

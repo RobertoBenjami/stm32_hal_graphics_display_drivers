@@ -5,7 +5,7 @@
 
 /*
  * Author: Roberto Benjami
- * version:  2022.12
+ * version:  2023.04
  */
 
 #include "main.h"
@@ -47,6 +47,8 @@
 #include "stm32l5xx_ll_gpio.h"
 #elif defined(STM32WB)
 #include "stm32wbxx_ll_gpio.h"
+#elif defined(STM32WBA)
+#include "stm32wbaxx_ll_gpio.h"
 #elif defined(STM32WL)
 #include "stm32wlxx_ll_gpio.h"
 #else
