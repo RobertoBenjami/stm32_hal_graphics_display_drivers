@@ -975,21 +975,21 @@ uint8_t xpt2046_ts_DetectTouch(uint16_t DeviceAddr);
 void    xpt2046_ts_GetXY(uint16_t DeviceAddr, uint16_t *X, uint16_t *Y);
 
 //=============================================================================
-#ifdef  __GNUC__
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-#elif   defined(__CC_ARM)
+#if   defined(__CC_ARM)
 #pragma push
 #pragma O0
+#elif  defined(__GNUC__)
+#pragma GCC push_options
+#pragma GCC optimize("O0")
 #endif
 void TS_IO_Delay(uint32_t c)
 {
   while(c--);
 }
-#ifdef  __GNUC__
-#pragma GCC pop_options
-#elif   defined(__CC_ARM)
+#if   defined(__CC_ARM)
 #pragma pop
+#elif  defined(__GNUC__)
+#pragma GCC pop_options
 #endif
 
 //-----------------------------------------------------------------------------

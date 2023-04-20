@@ -499,7 +499,7 @@ void mainApp(void)
 
   while(1)
   {
-    #ifdef  __GNUC__
+    #ifndef  __CC_ARM
     _impure_ptr->_r48->_rand_next = 0;
     #endif
 
