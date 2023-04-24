@@ -163,8 +163,6 @@ void mainApp(void)
     {
       if(ts.Y < boxsize)
       {
-        oldcolor = currentcolor;
-
         BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
         if (ts.X < boxsize)
         {
@@ -202,17 +200,19 @@ void mainApp(void)
           BSP_LCD_SetTextColor(oldcolor);
           if (oldcolor == LCD_COLOR_RED)
             BSP_LCD_FillRect(0, 0, boxsize, boxsize);
-          if (oldcolor == LCD_COLOR_YELLOW)
+          else if (oldcolor == LCD_COLOR_YELLOW)
             BSP_LCD_FillRect(boxsize, 0, boxsize, boxsize);
-          if (oldcolor == LCD_COLOR_GREEN)
+          else if (oldcolor == LCD_COLOR_GREEN)
             BSP_LCD_FillRect(boxsize * 2, 0, boxsize, boxsize);
-          if (oldcolor == LCD_COLOR_CYAN)
+          else if (oldcolor == LCD_COLOR_CYAN)
             BSP_LCD_FillRect(boxsize * 3, 0, boxsize, boxsize);
-          if (oldcolor == LCD_COLOR_BLUE)
+          else if (oldcolor == LCD_COLOR_BLUE)
             BSP_LCD_FillRect(boxsize * 4, 0, boxsize, boxsize);
-          if (oldcolor == LCD_COLOR_MAGENTA)
+          else if (oldcolor == LCD_COLOR_MAGENTA)
             BSP_LCD_FillRect(boxsize * 5, 0, boxsize, boxsize);
         }
+
+        oldcolor = currentcolor;
       }
       else
       {
