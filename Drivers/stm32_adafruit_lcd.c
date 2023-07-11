@@ -105,6 +105,7 @@ EndDependencies */
 
 /* @defgroup STM32_ADAFRUIT_LCD_Private_Variables */ 
 LCD_DrawPropTypeDef DrawProp;
+CharDisplay_ModeTypdef CharDisplay_Mode;
 
 extern LCD_DrvTypeDef  *lcd_drv;
 
@@ -220,6 +221,26 @@ void BSP_LCD_SetFont(sFONT *pFonts)
 sFONT *BSP_LCD_GetFont(void)
 {
   return DrawProp.pFont;
+}
+
+/**
+  * @brief  Sets the LCD CharDisplay Mode.
+  * @param  Mode: CharDisplay Mode to be used
+  * @retval None
+  */
+void BSP_LCD_SetCharDispalyMode(CharDisplay_ModeTypdef Mode)
+{
+  CharDisplay_Mode = Mode;
+}
+
+/**
+  * @brief  Gets the LCD CharDisplay Mode.
+  * @param  None
+  * @retval Used CharDisplay Mode
+  */
+CharDisplay_ModeTypdef BSP_LCD_GetCharDispalyMode(void)
+{
+  return CharDisplay_Mode;
 }
 
 /**
@@ -679,7 +700,7 @@ void BSP_LCD_DrawEllipse(uint16_t Xpos, uint16_t Ypos, uint16_t XRadius, uint16_
   rad2 = YRadius;
   
   K = (float)(rad2/rad1);
-  
+
   do {      
     BSP_LCD_DrawPixel((Xpos-(uint16_t)(x/K)), (Ypos+y), DrawProp.TextColor);
     BSP_LCD_DrawPixel((Xpos+(uint16_t)(x/K)), (Ypos+y), DrawProp.TextColor);
@@ -937,26 +958,40 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
         pChar++;
         c = *pChar;
       }
-
-      if(c & cbm)
-        *pb = DrawProp.TextColor;
-      else
-        *pb = DrawProp.BackColor;
-      pb++;
+      
+      if(CharDisplay_Mode == COVER_MODE)
+      {
+        if(c & cbm)
+          *pb = DrawProp.TextColor;
+        else
+          *pb = DrawProp.BackColor;
+        pb++;
+      }
+      else if(CharDisplay_Mode == TRANSPARENT_MODE)
+      {
+        if(c & cbm)
+          BSP_LCD_DrawPixel(Xpos + x, Ypos + y, DrawProp.TextColor);
+      }   
       cbm >>= 1;
     }
     cbm = 0;
-    ay++;
-    if(ay >= bmsy - 1)
+    if(CharDisplay_Mode == COVER_MODE)
     {
-      BSP_LCD_DrawRGB16Image(Xpos, Ypos + y + 1 - ay, DrawProp.pFont->Width, ay, fontbitmapbuf);
-      ay = 0;
-      pb = fontbitmapbuf;
+      ay++;
+      if(ay >= bmsy - 1)
+      {
+        BSP_LCD_DrawRGB16Image(Xpos, Ypos + y + 1 - ay, DrawProp.pFont->Width, ay, fontbitmapbuf);
+        ay = 0;
+        pb = fontbitmapbuf;
+      }
     }
   }
-  if(ay)
+  if(CharDisplay_Mode == COVER_MODE)
   {
-    BSP_LCD_DrawRGB16Image(Xpos, Ypos + y - ay, DrawProp.pFont->Width, ay, fontbitmapbuf);
+    if(ay)
+    {
+      BSP_LCD_DrawRGB16Image(Xpos, Ypos + y - ay, DrawProp.pFont->Width, ay, fontbitmapbuf);
+    }
   }
 }
 

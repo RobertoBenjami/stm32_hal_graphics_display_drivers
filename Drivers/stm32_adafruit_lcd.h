@@ -120,6 +120,15 @@ typedef enum
   RIGHT_MODE              = 0x02,    /*!< Right mode  */
   LEFT_MODE               = 0x03     /*!< Left mode   */
 }Line_ModeTypdef;
+
+/** 
+  * @brief  CharDisplay mode structures definition
+  */ 
+typedef enum
+{
+  COVER_MODE             = 0x01,    /*!< Cover mode */
+  TRANSPARENT_MODE       = 0x02,    /*!< Transparent mode  */
+}CharDisplay_ModeTypdef;
  
 #define __IO    volatile  
 
@@ -155,6 +164,8 @@ void     BSP_LCD_SetTextColor(__IO uint16_t Color);
 void     BSP_LCD_SetBackColor(__IO uint16_t Color);
 void     BSP_LCD_SetFont(sFONT *fonts);
 sFONT    *BSP_LCD_GetFont(void);
+void     BSP_LCD_SetCharDispalyMode(CharDisplay_ModeTypdef Mode);
+CharDisplay_ModeTypdef BSP_LCD_GetCharDispalyMode(void);
 
 void     BSP_LCD_Clear(uint16_t Color);
 void     BSP_LCD_ClearStringLine(uint16_t Line);
