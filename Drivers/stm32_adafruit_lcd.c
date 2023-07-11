@@ -959,7 +959,7 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
         c = *pChar;
       }
       
-      if(CharDisplay_Mode == COVER_MODE)
+      if(CharDisplay_Mode != TRANSPARENT_MODE)
       {
         if(c & cbm)
           *pb = DrawProp.TextColor;
@@ -967,7 +967,7 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
           *pb = DrawProp.BackColor;
         pb++;
       }
-      else if(CharDisplay_Mode == TRANSPARENT_MODE)
+      else
       {
         if(c & cbm)
           BSP_LCD_DrawPixel(Xpos + x, Ypos + y, DrawProp.TextColor);
@@ -975,7 +975,7 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
       cbm >>= 1;
     }
     cbm = 0;
-    if(CharDisplay_Mode == COVER_MODE)
+    if(CharDisplay_Mode != TRANSPARENT_MODE)
     {
       ay++;
       if(ay >= bmsy - 1)
@@ -986,7 +986,7 @@ static void DrawChar(uint16_t Xpos, uint16_t Ypos, const uint8_t *pChar)
       }
     }
   }
-  if(CharDisplay_Mode == COVER_MODE)
+  if(CharDisplay_Mode != TRANSPARENT_MODE)
   {
     if(ay)
     {
