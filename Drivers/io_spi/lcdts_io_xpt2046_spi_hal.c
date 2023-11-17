@@ -966,8 +966,6 @@ void LCD_IO_Transaction(uint16_t Cmd, uint8_t *pData, uint32_t Size, uint32_t Du
 
 static  uint16_t  tx, ty;
 
-extern  SPI_HandleTypeDef     TS_SPI_HANDLE;
-
 //=============================================================================
 /* TS chip select pin set */
 void    xpt2046_ts_Init(uint16_t DeviceAddr);
