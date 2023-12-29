@@ -135,13 +135,27 @@ union
 #define ILI9486_MAD_COLORMODE  ILI9486_MAD_BGR
 #endif
 
-#define SETWINDOW(x1, x2, y1, y2) \
-  { transdata.d16[0] = x1; transdata.d16[1] = x2; LCD_IO_WriteCmd8MultipleData16(ILI9486_CASET, (uint16_t *)&transdata, 2); \
-    transdata.d16[0] = y1; transdata.d16[1] = y2; LCD_IO_WriteCmd8MultipleData16(ILI9486_PASET, (uint16_t *)&transdata, 2); }
+#define SETWINDOW(x1, x2, y1, y2) 	\
+  { transdata.d8[0] = ((x1) >> 8); 	\
+	  transdata.d8[1] = (x1);			    \
+	  transdata.d8[2] = ((x2) >> 8); 	\
+	  transdata.d8[3] = (x2);			    \
+	  LCD_IO_WriteCmd8MultipleData8(ILI9486_CASET, (uint8_t *)&transdata, 4); \
+    transdata.d8[0] = ((y1) >> 8);	\
+	  transdata.d8[1] = (y1);			    \
+	  transdata.d8[2] = ((y2) >> 8);	\
+	  transdata.d8[3] = (y2);			    \
+	  LCD_IO_WriteCmd8MultipleData8(ILI9486_PASET, (uint8_t *)&transdata, 4); }
 
-#define SETCURSOR(x, y) \
-  { transdata.d16[0] = x; transdata.d16[1] = transdata.d16[0]; LCD_IO_WriteCmd8MultipleData16(ILI9486_CASET, (uint16_t *)&transdata, 2); \
-    transdata.d16[0] = y; transdata.d16[1] = transdata.d16[0]; LCD_IO_WriteCmd8MultipleData16(ILI9486_PASET, (uint16_t *)&transdata, 2); }
+#define SETCURSOR(x, y) 					        \
+  { transdata.d8[0] = ((x) >> 8); 			  \
+  	transdata.d8[1] = (x); 					      \
+	  transdata.d16[1] = transdata.d16[0]; 	\
+	  LCD_IO_WriteCmd8MultipleData8(ILI9486_CASET, (uint8_t *)&transdata, 4); \
+	  transdata.d8[0] = ((y) >> 8); 			  \
+	  transdata.d8[1] = (y); 					      \
+	  transdata.d16[1] = transdata.d16[0]; 	\
+	  LCD_IO_WriteCmd8MultipleData8(ILI9486_PASET, (uint8_t *)&transdata, 4); }
 
 #if (ILI9486_ORIENTATION == 0)
 #define ILI9486_SIZE_X                     ILI9486_LCD_PIXEL_WIDTH
