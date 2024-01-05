@@ -534,6 +534,7 @@ void ili9486_FillRect(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysi
 void ili9486_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
 {
   uint32_t index = 0, size = 0;
+  uint16_t tmp_d16 = 0;
   /* Read bitmap size */
   Ypos += pbmp[22] + (pbmp[23] << 8) - 1;
   size = *(volatile uint16_t *) (pbmp + 2);
@@ -549,9 +550,11 @@ void ili9486_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
     LastEntry = ILI9486_MAD_DATA_RIGHT_THEN_UP;
     LCD_IO_WriteCmd8MultipleData8(ILI9486_MADCTL, &EntryRightThenUp, 1);
   }
-  transdata.d16[0] = ILI9486_SIZE_X - 1 - yEnd;
-  transdata.d16[1] = ILI9486_SIZE_Y - 1 - yStart;
-  LCD_IO_WriteCmd8MultipleData16(ILI9486_PASET, &transdata, 2);
+  tmp_d16 = ILI9486_SIZE_X - 1 - yEnd;
+  transdata.d16[0] = (tmp_d16 << 8) | (tmp_d16 >> 8);
+  tmp_d16 = ILI9486_SIZE_Y - 1 - yStart;
+  transdata.d16[1] = (tmp_d16 << 8) | (tmp_d16 >> 8);
+  LCD_IO_WriteCmd8MultipleData8(ILI9486_PASET, &transdata, 4);
   LCD_IO_DrawBitmap(pbmp, size);
 }
 
