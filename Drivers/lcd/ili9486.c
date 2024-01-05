@@ -612,6 +612,7 @@ void ili9486_ReadRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t
   */
 void ili9486_Scroll(int16_t Scroll, uint16_t TopFix, uint16_t BottonFix)
 {
+  static uint16_t scrparam[4] = {-1, -1, -1, -1};
   uint16_t trans_scrparam[4];
   #if (ILI9486_ORIENTATION == 0)
   if((TopFix != scrparam[1]) || (BottonFix != scrparam[3]))
