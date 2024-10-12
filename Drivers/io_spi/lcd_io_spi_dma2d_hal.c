@@ -1,7 +1,7 @@
 /*
  * SPI HAL LCD driver with DMA2D (stm32f4xx, stm32f7xx, stm32h7xx)
  * author: Roberto Benjami
- * v.2022.11
+ * v.2024.10.12
 */
 
 //-----------------------------------------------------------------------------
@@ -340,7 +340,11 @@ __weak void LCD_IO_DmaTxCpltCallback(SPI_HandleTypeDef *hspi)
 
 //-----------------------------------------------------------------------------
 /* SPI DMA operation completed interrupt */
+#if USE_HAL_SPI_REGISTER_CALLBACKS == 0
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+#elif USE_HAL_SPI_REGISTER_CALLBACKS == 1
+void HAL_SPI_TxCpltCallback_Lcd(SPI_HandleTypeDef *hspi)
+#endif
 {
   if(hspi == &LCD_SPI_HANDLE)
   {
@@ -589,7 +593,11 @@ __weak void LCD_IO_DmaRxCpltCallback(SPI_HandleTypeDef *hspi)
 
 //-----------------------------------------------------------------------------
 /* SPI DMA operation interrupt */
+#if USE_HAL_SPI_REGISTER_CALLBACKS == 0
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+#elif USE_HAL_SPI_REGISTER_CALLBACKS == 1
+void HAL_SPI_RxCpltCallback_Lcd(SPI_HandleTypeDef *hspi)
+#endif
 {
   uint32_t dma_status = dmastatus.status;
   if(hspi == &LCD_SPI_HANDLE)
@@ -827,6 +835,14 @@ void LCD_IO_Init(void)
   RedBlueOrder(LCD_DMA2D_HANDLE);
   #endif
   LcdTransInit();
+  #if USE_HAL_SPI_REGISTER_CALLBACKS == 1
+  #if LCD_DMA_TX == 1
+  HAL_SPI_RegisterCallback(&LCD_SPI_HANDLE, HAL_SPI_TX_COMPLETE_CB_ID, (pSPI_CallbackTypeDef)HAL_SPI_TxCpltCallback_Lcd);
+  #endif
+  #if LCD_DMA_RX == 1
+  HAL_SPI_RegisterCallback(&LCD_SPI_HANDLE, HAL_SPI_TX_COMPLETE_CB_ID, (pSPI_CallbackTypeDef)HAL_SPI_RxCpltCallback_Lcd);
+  #endif
+  #endif  /* #if USE_HAL_SPI_REGISTER_CALLBACKS == 1 */
 }
 
 //-----------------------------------------------------------------------------
