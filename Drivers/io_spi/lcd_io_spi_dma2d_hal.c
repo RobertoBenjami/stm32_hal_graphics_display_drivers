@@ -24,7 +24,7 @@
    - LCD_SPI_TIMEOUT: HAL_SPI_Transmit and HAL_SPI_Receive timeout value */
 
 /* SPI clock pin default state */
-#define  LCDTS_SPI_DEFSTATE   0
+#define  LCD_SPI_DEFSTATE  0
 
 //-----------------------------------------------------------------------------
 /* Bitdepth convert macros */
