@@ -840,7 +840,7 @@ void LCD_IO_Init(void)
   HAL_SPI_RegisterCallback(&LCD_SPI_HANDLE, HAL_SPI_TX_COMPLETE_CB_ID, (pSPI_CallbackTypeDef)HAL_SPI_TxCpltCallback_Lcd);
   #endif
   #if LCD_DMA_RX == 1
-  HAL_SPI_RegisterCallback(&LCD_SPI_HANDLE, HAL_SPI_TX_COMPLETE_CB_ID, (pSPI_CallbackTypeDef)HAL_SPI_RxCpltCallback_Lcd);
+  HAL_SPI_RegisterCallback(&LCD_SPI_HANDLE, HAL_SPI_RX_COMPLETE_CB_ID, (pSPI_CallbackTypeDef)HAL_SPI_RxCpltCallback_Lcd);
   #endif
   #endif  /* #if USE_HAL_SPI_REGISTER_CALLBACKS == 1 */
 }
