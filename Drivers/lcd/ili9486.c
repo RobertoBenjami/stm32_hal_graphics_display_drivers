@@ -135,13 +135,25 @@ union
 #define ILI9486_MAD_COLORMODE  ILI9486_MAD_BGR
 #endif
 
-#define SETWINDOW(x1, x2, y1, y2) \
-  { transdata.d16[0] = x1; transdata.d16[1] = x2; LCD_IO_WriteCmd8MultipleData16(ILI9486_CASET, (uint16_t *)&transdata, 2); \
-    transdata.d16[0] = y1; transdata.d16[1] = y2; LCD_IO_WriteCmd8MultipleData16(ILI9486_PASET, (uint16_t *)&transdata, 2); }
+#define SETWINDOW(x1, x2, y1, y2) 	\
+{ \
+  transdata.d16[0] = (((x1) >> 8) | ((x1) << 8)); 	\
+  transdata.d16[1] = (((x2) >> 8) | ((x2) << 8)); 	\
+  LCD_IO_WriteCmd8MultipleData8(ILI9486_CASET, &transdata, 4); \
+  transdata.d16[0] = (((y1) >> 8) | ((y1) << 8)); 	\
+  transdata.d16[1] = (((y2) >> 8) | ((y2) << 8)); 	\
+  LCD_IO_WriteCmd8MultipleData8(ILI9486_PASET, &transdata, 4); \
+}
 
-#define SETCURSOR(x, y) \
-  { transdata.d16[0] = x; transdata.d16[1] = transdata.d16[0]; LCD_IO_WriteCmd8MultipleData16(ILI9486_CASET, (uint16_t *)&transdata, 2); \
-    transdata.d16[0] = y; transdata.d16[1] = transdata.d16[0]; LCD_IO_WriteCmd8MultipleData16(ILI9486_PASET, (uint16_t *)&transdata, 2); }
+#define SETCURSOR(x, y) 					        \
+{ \
+  transdata.d16[0] = (((x) >> 8) | ((x) << 8)); 	\
+  transdata.d16[1] = transdata.d16[0]; 			\
+  LCD_IO_WriteCmd8MultipleData8(ILI9486_CASET, (uint8_t *)&transdata, 4); \
+  transdata.d16[0] = (((y) >> 8) | ((y) << 8)); 	\
+  transdata.d16[1] = transdata.d16[0]; 			\
+  LCD_IO_WriteCmd8MultipleData8(ILI9486_PASET, (uint8_t *)&transdata, 4); \
+}
 
 #if (ILI9486_ORIENTATION == 0)
 #define ILI9486_SIZE_X                     ILI9486_LCD_PIXEL_WIDTH
@@ -522,6 +534,7 @@ void ili9486_FillRect(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysi
 void ili9486_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
 {
   uint32_t index = 0, size = 0;
+  uint16_t tmp_d16 = 0;
   /* Read bitmap size */
   Ypos += pbmp[22] + (pbmp[23] << 8) - 1;
   size = *(volatile uint16_t *) (pbmp + 2);
@@ -537,9 +550,11 @@ void ili9486_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
     LastEntry = ILI9486_MAD_DATA_RIGHT_THEN_UP;
     LCD_IO_WriteCmd8MultipleData8(ILI9486_MADCTL, &EntryRightThenUp, 1);
   }
-  transdata.d16[0] = ILI9486_SIZE_X - 1 - yEnd;
-  transdata.d16[1] = ILI9486_SIZE_Y - 1 - yStart;
-  LCD_IO_WriteCmd8MultipleData16(ILI9486_PASET, &transdata, 2);
+  tmp_d16 = ILI9486_SIZE_X - 1 - yEnd;
+  transdata.d16[0] = (tmp_d16 << 8) | (tmp_d16 >> 8);
+  tmp_d16 = ILI9486_SIZE_Y - 1 - yStart;
+  transdata.d16[1] = (tmp_d16 << 8) | (tmp_d16 >> 8);
+  LCD_IO_WriteCmd8MultipleData8(ILI9486_PASET, &transdata, 4);
   LCD_IO_DrawBitmap(pbmp, size);
 }
 
@@ -597,14 +612,18 @@ void ili9486_ReadRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t
   */
 void ili9486_Scroll(int16_t Scroll, uint16_t TopFix, uint16_t BottonFix)
 {
-  static uint16_t scrparam[4] = {0, 0, 0, 0};
+  static uint16_t scrparam[4] = {-1, -1, -1, -1};
+  uint16_t trans_scrparam[4];
   #if (ILI9486_ORIENTATION == 0)
   if((TopFix != scrparam[1]) || (BottonFix != scrparam[3]))
   {
     scrparam[1] = TopFix;
     scrparam[3] = BottonFix;
     scrparam[2] = ILI9486_LCD_PIXEL_HEIGHT - TopFix - BottonFix;
-    LCD_IO_WriteCmd8MultipleData16(ILI9486_VSCRDEF, &scrparam[1], 3);
+    trans_scrparam[1] = (scrparam[1] << 8) | (scrparam[1] >> 8);
+    trans_scrparam[3] = (scrparam[3] << 8) | (scrparam[3] >> 8);
+    trans_scrparam[2] = (scrparam[2] << 8) | (scrparam[2] >> 8);
+    LCD_IO_WriteCmd8MultipleData8(ILI9486_VSCRDEF, &trans_scrparam[1], 6);
   }
   Scroll = (0 - Scroll) % scrparam[2];
   if(Scroll < 0)
@@ -617,7 +636,10 @@ void ili9486_Scroll(int16_t Scroll, uint16_t TopFix, uint16_t BottonFix)
     scrparam[1] = TopFix;
     scrparam[3] = BottonFix;
     scrparam[2] = ILI9486_LCD_PIXEL_HEIGHT - TopFix - BottonFix;
-    LCD_IO_WriteCmd8MultipleData16(ILI9486_VSCRDEF, &scrparam[1], 3);
+    trans_scrparam[1] = (scrparam[1] << 8) | (scrparam[1] >> 8);
+    trans_scrparam[3] = (scrparam[3] << 8) | (scrparam[3] >> 8);
+    trans_scrparam[2] = (scrparam[2] << 8) | (scrparam[2] >> 8);
+    LCD_IO_WriteCmd8MultipleData8(ILI9486_VSCRDEF, &trans_scrparam[1], 6);
   }
   Scroll = (0 - Scroll) % scrparam[2];
   if(Scroll < 0)
@@ -630,7 +652,10 @@ void ili9486_Scroll(int16_t Scroll, uint16_t TopFix, uint16_t BottonFix)
     scrparam[3] = TopFix;
     scrparam[1] = BottonFix;
     scrparam[2] = ILI9486_LCD_PIXEL_HEIGHT - TopFix - BottonFix;
-    LCD_IO_WriteCmd8MultipleData16(ILI9486_VSCRDEF, &scrparam[1], 3);
+    trans_scrparam[3] = (scrparam[3] << 8) | (scrparam[3] >> 8);
+    trans_scrparam[1] = (scrparam[1] << 8) | (scrparam[1] >> 8);
+    trans_scrparam[2] = (scrparam[2] << 8) | (scrparam[2] >> 8);
+    LCD_IO_WriteCmd8MultipleData8(ILI9486_VSCRDEF, &trans_scrparam[1], 6);
   }
   Scroll %= scrparam[2];
   if(Scroll < 0)
@@ -643,7 +668,10 @@ void ili9486_Scroll(int16_t Scroll, uint16_t TopFix, uint16_t BottonFix)
     scrparam[3] = TopFix;
     scrparam[1] = BottonFix;
     scrparam[2] = ILI9486_LCD_PIXEL_HEIGHT - TopFix - BottonFix;
-    LCD_IO_WriteCmd8MultipleData16(ILI9486_VSCRDEF, &scrparam[1], 3);
+    trans_scrparam[3] = (scrparam[3] << 8) | (scrparam[3] >> 8);
+    trans_scrparam[1] = (scrparam[1] << 8) | (scrparam[1] >> 8);
+    trans_scrparam[2] = (scrparam[2] << 8) | (scrparam[2] >> 8);
+    LCD_IO_WriteCmd8MultipleData8(ILI9486_VSCRDEF, &trans_scrparam[1], 6);
   }
   Scroll %= scrparam[2];
   if(Scroll < 0)
@@ -654,7 +682,8 @@ void ili9486_Scroll(int16_t Scroll, uint16_t TopFix, uint16_t BottonFix)
   if(Scroll != scrparam[0])
   {
     scrparam[0] = Scroll;
-    LCD_IO_WriteCmd8DataFill16(ILI9486_VSCRSADD, scrparam[0], 1);
+    trans_scrparam[0] = (scrparam[0] << 8) | (scrparam[0] >> 8);
+    LCD_IO_WriteCmd8MultipleData8(ILI9486_VSCRSADD, &trans_scrparam[0], 2);
   }
 }
 
